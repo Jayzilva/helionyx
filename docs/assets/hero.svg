@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" role="img" aria-labelledby="t d">
+  <title id="t">Helionyx</title>
+  <desc id="d">Helionyx: open-source hybrid renewable energy sizing for AI assistants. Key figures: 8,760-hour simulation per design, up to 50 million candidates, 22 MCP tools, 5 solvers.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#132238"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="0.6" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="card"><rect width="1200" height="380" rx="20"/></clipPath>
+  </defs>
+  <rect width="1200" height="380" rx="20" fill="url(#bg)"/>
+  <g clip-path="url(#card)">
+  <circle cx="1040" cy="110" r="150" fill="url(#glow)" opacity="0.35"/>
+  <circle cx="1040" cy="110" r="46" fill="#F59E0B"/>
+  <circle cx="1040" cy="110" r="88" fill="none" stroke="#F59E0B" stroke-opacity="0.4" stroke-width="2" stroke-dasharray="4 8"/>
+  <circle cx="1040" cy="110" r="128" fill="none" stroke="#38BDF8" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="2 10"/>
+  <circle cx="1128" cy="110" r="7" fill="#38BDF8"/>
+  <circle cx="952" cy="190" r="6" fill="#14B8A6"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="56" y="100" font-size="64" font-weight="700" fill="#F8FAFC">Helionyx</text>
+    <text x="58" y="142" font-size="24" fill="#CBD5E1">Open-source hybrid renewable energy sizing for AI assistants</text>
+    <text x="58" y="176" font-size="18" fill="#94A3B8">Solar PV, wind, battery, diesel and grid: simulated, ranked and explained over MCP</text>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="56" y="222" width="252" height="112" rx="14" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+    <rect x="56" y="222" width="6" height="112" rx="3" fill="#F59E0B"/>
+    <text x="82" y="276" font-size="40" font-weight="700" fill="#F8FAFC">8,760</text>
+    <text x="82" y="310" font-size="17" fill="#94A3B8">hours simulated per design</text>
+
+    <rect x="328" y="222" width="252" height="112" rx="14" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+    <rect x="328" y="222" width="6" height="112" rx="3" fill="#38BDF8"/>
+    <text x="354" y="276" font-size="40" font-weight="700" fill="#F8FAFC">50 M</text>
+    <text x="354" y="310" font-size="17" fill="#94A3B8">candidates (heuristic search)</text>
+
+    <rect x="600" y="222" width="252" height="112" rx="14" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+    <rect x="600" y="222" width="6" height="112" rx="3" fill="#14B8A6"/>
+    <text x="626" y="276" font-size="40" font-weight="700" fill="#F8FAFC">22</text>
+    <text x="626" y="310" font-size="17" fill="#94A3B8">MCP tools, 9 resources</text>
+
+    <rect x="872" y="222" width="272" height="112" rx="14" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+    <rect x="872" y="222" width="6" height="112" rx="3" fill="#22C55E"/>
+    <text x="898" y="276" font-size="40" font-weight="700" fill="#F8FAFC">5</text>
+    <text x="898" y="310" font-size="17" fill="#94A3B8">solvers to cross-check</text>
+  </g>
+</svg>

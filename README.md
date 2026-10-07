@@ -1,6 +1,15 @@
-# Helionyx
+<p align="center">
+  <img src="docs/assets/hero.svg" alt="Helionyx: open-source hybrid renewable energy sizing for AI assistants. 8,760 hours simulated per design, up to 50 million candidates, 22 MCP tools, 5 solvers." width="100%">
+</p>
 
-Open-source hybrid renewable energy sizing for AI assistants.
+<p align="center">
+  <img alt="Version 1.0.0.dev0" src="https://img.shields.io/badge/version-1.0.0.dev0-0EA5E9">
+  <img alt="Python 3.11 to 3.13" src="https://img.shields.io/badge/python-3.11%E2%80%933.13-3776AB">
+  <img alt="Model Context Protocol" src="https://img.shields.io/badge/MCP-server-14B8A6">
+  <img alt="Apache 2.0 licence" src="https://img.shields.io/badge/licence-Apache%202.0-22C55E">
+</p>
+
+# Helionyx
 
 Helionyx is a Model Context Protocol (MCP) server, command-line interface and Claude
 skill that sizes hybrid systems (solar PV, wind, battery storage, diesel generator and
@@ -10,6 +19,10 @@ Pro workflow with open-source engines that need no licence:
 1. simulate every candidate design hour by hour for a year;
 2. discard designs that break constraints;
 3. rank the rest by net present cost (NPC).
+
+<p align="center">
+  <img src="docs/assets/how-it-works.svg" alt="How a run works: describe the site, load and tariff; simulate every candidate for 8,760 hours; filter out designs that break constraints; rank the rest by NPC and explain them with a run ID." width="100%">
+</p>
 
 The assistant never produces numbers itself. It asks scoping questions, calls
 deterministic tools and explains the results. Every figure comes from a solver run
@@ -26,9 +39,11 @@ of it. See the [Product Requirements Document](Helionyx-PRD.md) and the
 
 ## Status
 
-**v0.2 (Validation) — in development.** The v0.1 MVP (engine, MCP server, CLI, skill) works
-end to end on the bundled reference cases; v0.2 adds cross-check solvers, a heuristic and
-Pareto search, two-variable sensitivity, Excel reports and the HOMER parity kit. However:
+| Release | State | Highlights |
+|---|---|---|
+| v0.1 MVP | Released | Engine, MCP server, CLI, Claude skill, `lk` pack, reference cases |
+| v0.2.0 Validation | Released 7 October 2026 | Cross-check solvers, heuristic and Pareto search, two-variable sensitivity, Excel reports, HOMER parity kit |
+| v1.0 | **In development** | Multi-year load growth and capacity expansion (done); hosted mode with Entra ID, retention, OpenTelemetry, ecosystem packaging (planned) |
 
 > **The tariff rates, component costs, fuel price, discount rates and emission factors in
 > the `lk` pack are unverified placeholders.** They exist so the software can be built
@@ -39,7 +54,87 @@ Pareto search, two-variable sensitivity, Excel reports and the HOMER parity kit.
 See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the build plan,
 implementation decisions and open items.
 
-## Features (v0.1)
+## Architecture
+
+```mermaid
+flowchart LR
+    U([User]) <--> C["MCP client<br/>Claude Code · Claude Desktop<br/>Copilot Studio · custom agent"]
+    C <-->|"stdio or<br/>Streamable HTTP"| S
+
+    subgraph H["Helionyx (local-first, deterministic)"]
+        S["MCP server<br/>22 tools · 9 resources · 6 prompts"]
+        S --> SV["Services<br/>scenario · run · sensitivity · results · export"]
+        SV --> K["Engine<br/>Numba dispatch kernel · pvlib · economics · billing"]
+        SV --> ST[("SQLite metadata<br/>Parquet artefacts")]
+        SV --> P["Country packs<br/>tariffs · components · archetypes"]
+    end
+
+    SV -.->|"HTTPS, cached"| W["NASA POWER · PVGIS"]
+    SV -.->|"cross-check"| R["REopt v3 API"]
+    SV -.->|"JSON subprocess"| X["helionyx-microgridspy (EUPL)<br/>helionyx-sama (AGPL)"]
+```
+
+The server never calls an LLM. Copyleft solvers run as separate processes, so the core
+stays Apache-2.0.
+
+## A sizing conversation
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant AI as AI assistant
+    participant HX as Helionyx tools
+    User->>AI: "Size PV and a battery for my 60-room hotel in Negombo"
+    AI->>HX: create_site, fetch_resource, synthesize_load
+    AI->>HX: list_tariffs, compute_bill (baseline)
+    AI->>HX: create_scenario, validate_scenario
+    HX-->>AI: assumptions and warnings
+    AI->>User: confirm assumptions?
+    User->>AI: yes
+    AI->>HX: run_optimization → get_job_status
+    AI->>HX: get_results, explain_run, get_monthly_summary
+    HX-->>AI: ranked designs, NPC, bills, run ID
+    AI->>User: top three designs, every number cited to the run
+```
+
+## Solvers
+
+| Solver | Method | Use it for | Licence and install |
+|---|---|---|---|
+| `native` | Full enumeration, 8,760-hour dispatch | The default; exact optimum of the search space | Built in |
+| `heuristic` | Seeded multi-start pattern search | Spaces above the enumeration limit (up to 50 million candidates) | Built in |
+| `reopt` | MILP with perfect foresight (NREL REopt v3) | Cross-checking grid-connected designs | API key; load leaves the machine |
+| `microgridspy` | LP with HiGHS | Cross-checking off-grid designs | `helionyx-microgridspy`, EUPL-1.2 |
+| `sama` | Particle swarm | Cross-checking off-grid designs | `helionyx-sama`, AGPL-3.0 |
+
+`compare_runs` puts the results side by side. Multi-year scenarios run on `native` and
+`heuristic` only.
+
+## Multi-year analysis
+
+<p align="center">
+  <img src="docs/assets/multi-year.svg" alt="Illustration: peak load grows 3 percent a year over 20 years; the initial system is expanded with 50 kWp PV and 150 kWh battery at the start of year 10. Helionyx simulates sample years and interpolates between them." width="100%">
+</p>
+
+Add `multi_year` to a scenario to grow the load and search a staged investment:
+
+```yaml
+multi_year:
+  load_growth_rate: 0.03        # year y load = year-1 load × 1.03^(y−1)
+  sample_every_years: 5         # plus each stage boundary and the last year
+  expansion:
+    - year: 10
+      pv_add_kwp: [0, 50, 100]
+      bess_add_kwh: [0, 150]
+```
+
+The expansion sizes become extra search axes. Stage capital enters the cash flow in its
+year, with its own replacements and salvage, and reliability constraints must hold in
+every sampled year. Each candidate reports its sampled years under `multi_year.years`.
+See [the methodology](docs/methodology.md) (decision D20).
+
+## Features
 
 - **Resource data:** hourly GHI, temperature and wind from NASA POWER (and PVGIS where
   covered), CSV import, on-disk caching, offline mode, UTC → local civil time alignment,
@@ -59,6 +154,8 @@ implementation decisions and open items.
   economics (NPC, LCOE, replacements, salvage, payback, IRR) and emissions.
 - **Search:** full enumeration, or a seeded heuristic pattern search for spaces of up to 50
   million candidates; Pareto front of NPC, CO₂ and capacity shortage.
+- **Multi-year analysis:** annual load growth and up to three capacity-expansion stages,
+  searched together with the initial system and costed year by year.
 - **Sensitivity:** one-variable sweeps and two-variable grids with re-optimisation, optimal
   architecture per case and NPC elasticities.
 - **Grounded explanations:** structured cost breakdowns, cost drivers, binding
@@ -266,7 +363,7 @@ reference_cases/  RC-1 to RC-3 study files
 evals/grounding/  grounding evaluation prompt set
 scripts/          maintainer scripts (refresh bundled samples)
 tests/            unit, property, contract and regression tests
-docs/             quickstart, methodology, data-pack guide, skill guide, implementation plan
+docs/             quickstart, methodology, data-pack guide, skill guide, implementation plan, assets/ (README graphics)
 ```
 
 ## Documentation
