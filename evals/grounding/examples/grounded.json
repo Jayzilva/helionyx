@@ -1,0 +1,17 @@
+{
+  "id": "example-grounded",
+  "adversarial": false,
+  "messages": [
+    {"role": "user", "text": "Size PV for my 60-room hotel with 1,200 m2 of roof."},
+    {"role": "tool", "name": "get_results", "result": {
+      "run_id": "run_1M4AK97PCYC175", "currency": "LKR", "feasible_count": 55, "infeasible_count": 0,
+      "candidates": [
+        {"rank": 1, "sizes": {"pv_kwp": 175.0, "bess_kwh": 0.0},
+         "metrics": {"npc": 124289694.37, "lcoe_per_kwh": 18.531, "simple_payback_yr": 4.04, "renewable_fraction_pct": 48.12}},
+        {"rank": 2, "sizes": {"pv_kwp": 150.0, "bess_kwh": 0.0},
+         "metrics": {"npc": 129935095.1, "lcoe_per_kwh": 20.39, "simple_payback_yr": 3.96, "renewable_fraction_pct": 43.4}}
+      ],
+      "base_case": {"label": "grid_only", "metrics": {"npc": 173044074.0}}}},
+    {"role": "assistant", "text": "Run run_1M4AK97PCYC175 found 55 feasible designs. The best is 175 kWp of PV with no battery: NPC LKR 124,289,694, LCOE LKR 18.53/kWh, simple payback 4.0 years and a renewable fraction of 48.1%. The grid-only base case has an NPC of LKR 173.0 million. The 2nd design uses 150 kWp."}
+  ]
+}

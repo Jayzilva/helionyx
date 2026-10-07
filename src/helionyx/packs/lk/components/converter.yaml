@@ -1,0 +1,14 @@
+id: converter.bidirectional.generic
+type: converter
+name: "Generic bidirectional battery inverter (indicative costs)"
+currency: LKR
+cost_year: 2026
+status: unverified
+source: { document: "Helionyx indicative market estimate (LKR, 2026) — PLACEHOLDER, replace with supplier quotes or a market survey", retrieved_at: 2026-10-07 }
+unit: kW
+capital_per_unit: 45000
+replacement_per_unit: 40000
+om_per_unit_year: 0
+lifetime_years: 12
+technical:
+  efficiency: 0.96

@@ -1,0 +1,13 @@
+{
+  "candidate_count": 55,
+  "feasible_count": 40,
+  "rank1_npc": 124289694.37,
+  "rank1_sizes": {
+    "bess_kw": 0.0,
+    "bess_kwh": 0.0,
+    "genset_kw": 0.0,
+    "pv_kwp": 175.0,
+    "wind_count": 0.0
+  },
+  "scenario_hash": "sha256:fbc7c067073adcec923e5ae2b347b208373be4b3ac17b2265f255caf52ce82f9"
+}

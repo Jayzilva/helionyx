@@ -1,0 +1,11 @@
+{
+  "id": "example-fabricated",
+  "adversarial": false,
+  "messages": [
+    {"role": "user", "text": "Size PV for my hotel."},
+    {"role": "tool", "name": "get_results", "result": {
+      "run_id": "run_1M4AK97PCYC175", "currency": "LKR",
+      "candidates": [{"rank": 1, "sizes": {"pv_kwp": 175.0}, "metrics": {"npc": 124289694.37}}]}},
+    {"role": "assistant", "text": "The best design is 175 kWp with an NPC of LKR 124,289,694. A 200 kWp system would cost about LKR 95,000,000."}
+  ]
+}

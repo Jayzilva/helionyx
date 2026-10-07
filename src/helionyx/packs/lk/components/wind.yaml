@@ -1,0 +1,31 @@
+id: wind.10kw.generic
+type: wind
+name: "Generic 10 kW small wind turbine on 30 m tower (indicative costs)"
+currency: LKR
+cost_year: 2026
+status: unverified
+source: { document: "Helionyx indicative market estimate (LKR, 2026) — PLACEHOLDER, replace with supplier quotes or a market survey", retrieved_at: 2026-10-07 }
+unit: turbine
+capital_per_unit: 6000000
+replacement_per_unit: 5000000
+om_per_unit_year: 120000
+lifetime_years: 20
+technical:
+  rated_kw: 10.0
+  hub_height_m: 30.0
+  availability: 0.95
+  roughness_length_m: 0.03
+  air_density_correction: true
+  power_curve:
+    - [0.0, 0.0]
+    - [2.9, 0.0]
+    - [3.0, 0.2]
+    - [4.0, 0.7]
+    - [5.0, 1.5]
+    - [6.0, 2.6]
+    - [7.0, 4.0]
+    - [8.0, 5.6]
+    - [9.0, 7.3]
+    - [10.0, 8.8]
+    - [11.0, 10.0]
+    - [25.0, 10.0]

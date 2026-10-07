@@ -1,0 +1,26 @@
+# RC-2 60-room hotel, Colombo–Negombo area (grid-connected PV + BESS, TOU hotel tariff, net accounting).
+# Monthly bills are synthetic.
+study:
+  site: {name: "RC-2 Negombo hotel", latitude: 7.2083, longitude: 79.8358, country_pack: lk}
+  resource: {source: nasa_power, year: 2023}
+  loads:
+    - components: [{archetype: hotel, count: 60}]
+      monthly_kwh: [50000, 47000, 51000, 46000, 43000, 40000, 43000, 44000, 41000, 43000, 44000, 50000]
+      seed: 202
+scenario:
+  name: "RC-2 Hotel PV + BESS (grid-connected)"
+  grid:
+    mode: grid_connected
+    tariff_id: lk.ceb.H2
+    export_scheme: net_accounting
+    max_import_kw: 400
+    max_export_kw: 250
+  components:
+    pv: {sizes_kwp: {min: 0, max: 250, step: 25}, dc_ac_ratio: 1.2, tilt_deg: 10, azimuth_deg: 180}
+    bess: {sizes_kwh: [0, 100, 200, 300, 400], power_kw_per_kwh: 0.5}
+  dispatch:
+    grid: {battery_discharge_periods: [peak], grid_charging: false, soc_reserve_for_outage: 0.3}
+  economics: {project_life_years: 20, nominal_discount_rate: 0.12, inflation_rate: 0.05}
+  constraints: {roof_area_m2: 1200}
+  options: {analysis_date: 2026-10-07}
+  seed: 42

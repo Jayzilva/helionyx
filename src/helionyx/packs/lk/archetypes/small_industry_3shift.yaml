@@ -1,0 +1,9 @@
+id: small_industry_3shift
+name: "Small industry (three shifts)"
+basis: "Synthetic shape authored by Helionyx maintainers from typical Sri Lankan usage patterns; not measured data. Calibrate to bills (FR-LOAD-004). Continuous production with shift-change dips."
+synthetic: true
+unit_label: site
+typical_annual_kwh: 400000
+weekday: [0.95,0.95,0.95,0.95,0.95,0.92,0.85,0.95,1.05,1.08,1.08,1.08,1.0,1.08,1.08,1.05,1.0,0.95,0.98,1.0,1.0,1.0,0.98,0.96]
+weekend: [0.8,0.8,0.8,0.8,0.8,0.78,0.75,0.8,0.85,0.88,0.88,0.88,0.85,0.88,0.88,0.85,0.82,0.8,0.82,0.82,0.82,0.82,0.8,0.8]
+monthly: [1.0,1.0,1.0,0.97,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.03]

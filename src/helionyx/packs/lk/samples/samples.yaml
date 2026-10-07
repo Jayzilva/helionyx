@@ -1,0 +1,39 @@
+delft_island:
+  elevation_m: 1.3
+  file: nasa_power_delft_island_2023.csv.gz
+  latitude: 9.5167
+  license: 'NASA POWER data: no restrictions; cite NASA Langley Research Center POWER
+    Project'
+  longitude: 79.6833
+  name: Delft Island (Northern Province)
+  retrieved_at: '2026-10-07'
+  source: NASA POWER hourly API, RE community (ALLSKY_SFC_SW_DWN, T2M, WS10M, WS50M)
+  time_standard: UTC
+  url: https://power.larc.nasa.gov/api/temporal/hourly/point
+  year: 2023
+hatton:
+  elevation_m: 681.44
+  file: nasa_power_hatton_2023.csv.gz
+  latitude: 6.8916
+  license: 'NASA POWER data: no restrictions; cite NASA Langley Research Center POWER
+    Project'
+  longitude: 80.5955
+  name: Hatton (hill country, Central Province)
+  retrieved_at: '2026-10-07'
+  source: NASA POWER hourly API, RE community (ALLSKY_SFC_SW_DWN, T2M, WS10M, WS50M)
+  time_standard: UTC
+  url: https://power.larc.nasa.gov/api/temporal/hourly/point
+  year: 2023
+negombo:
+  elevation_m: 123.66
+  file: nasa_power_negombo_2023.csv.gz
+  latitude: 7.2083
+  license: 'NASA POWER data: no restrictions; cite NASA Langley Research Center POWER
+    Project'
+  longitude: 79.8358
+  name: Negombo (coastal, Western Province)
+  retrieved_at: '2026-10-07'
+  source: NASA POWER hourly API, RE community (ALLSKY_SFC_SW_DWN, T2M, WS10M, WS50M)
+  time_standard: UTC
+  url: https://power.larc.nasa.gov/api/temporal/hourly/point
+  year: 2023

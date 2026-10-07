@@ -1,0 +1,9 @@
+id: hotel
+name: "Hotel (air-conditioned, coastal)"
+basis: "Synthetic shape authored by Helionyx maintainers from typical Sri Lankan usage patterns; not measured data. Calibrate to bills (FR-LOAD-004). Continuous AC and kitchen load, evening peak, seasonal occupancy (Dec–Mar high season)."
+synthetic: true
+unit_label: room
+typical_annual_kwh: 9000
+weekday: [0.75,0.72,0.70,0.70,0.72,0.80,0.92,1.00,1.02,1.02,1.05,1.10,1.15,1.15,1.12,1.08,1.05,1.08,1.20,1.25,1.20,1.08,0.92,0.82]
+weekend: [0.78,0.75,0.72,0.72,0.74,0.80,0.92,1.02,1.05,1.05,1.08,1.12,1.18,1.18,1.15,1.10,1.08,1.10,1.22,1.28,1.22,1.10,0.95,0.85]
+monthly: [1.12,1.10,1.10,1.02,0.92,0.88,0.92,0.95,0.90,0.92,0.98,1.12]

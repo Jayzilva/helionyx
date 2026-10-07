@@ -1,0 +1,78 @@
+# HOMER Pro parameter sheet — {{ s.name }}
+
+Scenario `{{ scenario_id }}` · hash `{{ scenario_hash }}` · generated {{ generated_at }}
+
+Enter these values in HOMER Pro by hand, then import the series files. Use HOMER's
+**idealised storage model** and the matching dispatch strategy (SRS §9.4).
+
+## Site
+
+| Item | Value |
+|---|---|
+| Location | {{ s.site.name }} ({{ s.site.latitude }}, {{ s.site.longitude }}) |
+| Time zone | {{ s.site.timezone }} |
+| Elevation | {{ s.site.elevation_m }} m |
+
+## Series files (8,760 rows from 1 January 00:00 local time)
+
+| File | HOMER input | Unit |
+|---|---|---|
+| `load_kw.txt` | Electric load → import time series | kW |
+| `ghi_kw_m2.txt` | Solar GHI resource → import time series | kW/m² |
+| `temp_c.txt` | Temperature resource → import time series | °C |
+| `wind_m_s.txt` | Wind resource → import time series (anemometer height {{ wind_height }} m) | m/s |
+
+## Economics
+
+| Item | Value |
+|---|---|
+| Project lifetime | {{ s.economics.project_life_years }} years |
+| Real discount rate | {{ "%.4f"|format(s.economics.real_discount_rate) }}{% if s.economics.nominal_discount_rate is not none %} (nominal {{ s.economics.nominal_discount_rate }}, inflation {{ s.economics.inflation_rate }}){% endif %} |
+| Currency | {{ s.economics.currency }} |
+| Diesel price | {{ s.economics.fuel_price_per_l }} {{ s.economics.currency }}/L |
+| System fixed capital / O&M per year | {{ s.economics.system_fixed_capital }} / {{ s.economics.system_fixed_om_per_year }} |
+
+## Components and search space
+{% for kind, c in s.components.items() if c %}
+
+### {{ kind }} — {{ c.name }} (`{{ c.spec }}`)
+
+| Item | Value |
+|---|---|
+| Capital cost per unit | {{ c.capital_per_unit }} |
+| Replacement cost per unit | {{ c.replacement_per_unit }} |
+| O&M per unit per year | {{ c.om_per_unit_year }} |
+| Lifetime | {{ c.lifetime_years }} years |
+{% for k, v in c.technical.items() %}
+| {{ k }} | {{ v }} |
+{% endfor %}
+{% if c.sizes_kwp is defined %}
+| Search sizes (kWp) | {{ c.sizes_kwp | join(", ") }} |
+| DC/AC ratio, tilt, azimuth | {{ c.dc_ac_ratio }}, {{ c.tilt_deg }}°, {{ c.azimuth_deg }}° (Helionyx azimuth: 180° = south) |
+{% endif %}
+{% if c.sizes_kwh is defined %}
+| Search sizes (kWh) | {{ c.sizes_kwh | join(", ") }} |
+| Power per kWh | {{ c.power_kw_per_kwh }} kW/kWh |
+{% endif %}
+{% if c.sizes_kw is defined %}
+| Search sizes (kW) | {{ c.sizes_kw | join(", ") }} |
+{% endif %}
+{% if c.counts is defined %}
+| Search counts | {{ c.counts | join(", ") }} |
+{% endif %}
+{% endfor %}
+
+## Grid and dispatch
+
+| Item | Value |
+|---|---|
+| Grid mode | {{ s.grid.mode }} |
+{% if s.grid.tariff %}
+| Tariff | {{ s.grid.tariff.id }} ({{ s.grid.tariff.name }}); enter rates by period in HOMER's advanced grid |
+| Export scheme | {{ s.grid.export_scheme }} |
+{% endif %}
+| Dispatch strategy | {{ s.dispatch.strategy }} (cycle-charging set-point {{ s.dispatch.cc_setpoint_soc }}) |
+| Maximum capacity shortage | {{ s.constraints.max_capacity_shortage }} |
+| Operating reserve | 0 % (Helionyx has no operating reserve) |
+
+> {{ disclaimer }}

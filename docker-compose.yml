@@ -1,0 +1,20 @@
+# Local development stack. Only the app for now; PostgreSQL (and Blob-style
+# artefact storage) arrive with hosted mode in v1.0.
+services:
+  helionyx:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"   # v0.1 has no authentication: bind to localhost only
+    environment:
+      HNX_WORKSPACE: /data
+      HNX_LOG_LEVEL: INFO
+    volumes:
+      - helionyx-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  helionyx-data:

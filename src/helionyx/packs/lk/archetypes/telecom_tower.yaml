@@ -1,0 +1,9 @@
+id: telecom_tower
+name: "Telecom tower"
+basis: "Synthetic shape authored by Helionyx maintainers from typical Sri Lankan usage patterns; not measured data. Calibrate to bills (FR-LOAD-004). Flat continuous load with small cooling variation."
+synthetic: true
+unit_label: site
+typical_annual_kwh: 26000
+weekday: [0.95,0.95,0.95,0.95,0.95,0.96,0.98,1.0,1.02,1.04,1.06,1.08,1.08,1.08,1.06,1.04,1.02,1.0,0.98,0.97,0.96,0.96,0.95,0.95]
+weekend: [0.95,0.95,0.95,0.95,0.95,0.96,0.98,1.0,1.02,1.04,1.06,1.08,1.08,1.08,1.06,1.04,1.02,1.0,0.98,0.97,0.96,0.96,0.95,0.95]
+monthly: [0.98,1.0,1.04,1.05,1.02,0.98,0.97,0.97,0.98,0.99,0.99,1.0]

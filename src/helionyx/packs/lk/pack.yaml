@@ -1,0 +1,11 @@
+# Helionyx country pack: Sri Lanka
+id: lk
+name: Sri Lanka
+version: 2026.10.0
+last_verified: 2026-10-07
+maintainers: ["Jayath"]
+license: CC-BY-4.0
+timezone: Asia/Colombo
+currency: LKR
+weekend_days: [6, 7]   # ISO weekday numbers: Saturday, Sunday
+staleness_months: 6

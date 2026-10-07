@@ -1,0 +1,9 @@
+id: school
+name: "School"
+basis: "Synthetic shape authored by Helionyx maintainers from typical Sri Lankan usage patterns; not measured data. Calibrate to bills (FR-LOAD-004). Weekday 07:30–14:00 classes, closed weekends and in school holidays (April, August, December)."
+synthetic: true
+unit_label: school
+typical_annual_kwh: 12000
+weekday: [0.1,0.1,0.1,0.1,0.1,0.15,0.6,1.9,2.2,2.2,2.2,2.1,1.9,1.2,0.5,0.3,0.25,0.2,0.2,0.15,0.12,0.1,0.1,0.1]
+weekend: [0.1,0.1,0.1,0.1,0.1,0.1,0.12,0.15,0.2,0.2,0.2,0.2,0.2,0.18,0.15,0.12,0.12,0.12,0.15,0.12,0.12,0.1,0.1,0.1]
+monthly: [1.1,1.15,1.15,0.6,1.15,1.15,1.15,0.6,1.15,1.15,1.15,0.6]

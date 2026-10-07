@@ -1,0 +1,23 @@
+# RC-1 Island village, Northern Province (off-grid PV + wind + BESS + diesel). All inputs synthetic.
+study:
+  site: {name: "RC-1 Delft Island village", latitude: 9.5167, longitude: 79.6833, country_pack: lk}
+  resource: {source: nasa_power, year: 2023}
+  loads:
+    - components:
+        - {archetype: rural_household, count: 150}
+        - {archetype: health_clinic, count: 1}
+        - {archetype: school, count: 1}
+        - {archetype: cold_storage, annual_kwh: 60000}
+      seed: 101
+scenario:
+  name: "RC-1 Island village (off-grid)"
+  grid: {mode: off_grid}
+  components:
+    pv: {sizes_kwp: {min: 0, max: 300, step: 25}}
+    wind: {counts: [0, 1, 2, 3, 4]}
+    bess: {sizes_kwh: {min: 0, max: 1200, step: 150}}
+    genset: {sizes_kw: [0, 40, 60, 80]}
+  dispatch: {strategy: load_following}
+  constraints: {max_capacity_shortage: 0.01}
+  options: {analysis_date: 2026-10-07}
+  seed: 42

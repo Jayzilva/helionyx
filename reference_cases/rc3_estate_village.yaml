@@ -1,0 +1,21 @@
+# RC-3 Hill-country estate village (off-grid PV + BESS + diesel). All inputs synthetic.
+study:
+  site: {name: "RC-3 Hatton estate village", latitude: 6.8916, longitude: 80.5955, country_pack: lk}
+  resource: {source: nasa_power, year: 2023}
+  loads:
+    - components:
+        - {archetype: rural_household, count: 50}
+        - {archetype: estate_office, count: 1}
+        - {archetype: school, count: 1}
+      seed: 303
+scenario:
+  name: "RC-3 Estate village (off-grid)"
+  grid: {mode: off_grid}
+  components:
+    pv: {sizes_kwp: {min: 0, max: 150, step: 10}}
+    bess: {sizes_kwh: {min: 0, max: 600, step: 50}}
+    genset: {sizes_kw: [0, 15, 20, 25, 30]}
+  dispatch: {strategy: cycle_charging}
+  constraints: {max_capacity_shortage: 0.02}
+  options: {analysis_date: 2026-10-07}
+  seed: 42

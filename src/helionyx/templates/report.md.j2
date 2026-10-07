@@ -1,0 +1,138 @@
+# Helionyx pre-feasibility report — {{ s.name }}
+
+| | |
+|---|---|
+| Run | `{{ run.run_id }}` |
+| Scenario | `{{ run.scenario_id }}` (version {{ scn.version }}) |
+| Scenario hash | `{{ run.scenario_hash }}` |
+| Engine | {{ run.engine }} |
+| Data packs | {% for k, v in run.packs.items() %}{{ k }}@{{ v }} {% endfor %} |
+| Generated | {{ generated_at }} |
+
+> **Disclaimer.** {{ disclaimer }}
+
+## 1. Scenario summary
+
+| Item | Value |
+|---|---|
+| Site | {{ s.site.name }} ({{ s.site.latitude }}, {{ s.site.longitude }}), {{ s.site.timezone }} |
+| Grid | {{ s.grid.mode }}{% if s.grid.tariff %}, tariff {{ s.grid.tariff.id }}, export scheme {{ s.grid.export_scheme }}{% endif %} |
+| Grid availability | {{ s.grid.availability.type }} |
+| Dispatch | {{ s.dispatch.strategy }} |
+| Project life / real discount rate | {{ s.economics.project_life_years }} years / {{ "%.2f"|format(100 * s.economics.real_discount_rate) }} % |
+| Candidates simulated | {{ run.feasible_count + run.infeasible_count }} ({{ run.feasible_count }} feasible) |
+| Currency | {{ run.currency }} |
+
+## 2. Assumptions
+
+Every value Helionyx filled in, with its origin, source and date.
+
+| Field | Value | Origin | Source | Date |
+|---|---|---|---|---|
+{% for a in scn.assumptions if a.origin != "user" %}
+| `{{ a.path }}` | {{ a.value }} | {{ a.origin }} | {{ a.source or "" }} | {{ a.date or "" }} |
+{% endfor %}
+
+User-supplied values: {{ scn.assumptions | selectattr("origin", "equalto", "user") | list | length }} fields (see the scenario YAML).
+{% if scn.warnings %}
+
+### Warnings
+
+{% for w in scn.warnings %}
+- **{{ w.code }}** {{ w.message }}
+{% endfor %}
+{% endif %}
+
+## 3. Top designs (sorted by {{ results.sorted_by }})
+
+| Rank | PV (kWp) | Wind (turbines) | Battery (kWh / kW) | Genset (kW) | NPC ({{ run.currency }}) | LCOE ({{ run.currency }}/kWh) | Initial capital | RF (%) | Annual bill | Simple payback (yr) |
+|---|---|---|---|---|---|---|---|---|---|---|
+{% for c in results.candidates %}
+| {{ c.rank }} | {{ c.sizes.pv_kwp|n1 }} | {{ c.sizes.wind_count|n0 }} | {{ c.sizes.bess_kwh|n0 }} / {{ c.sizes.bess_kw|n0 }} | {{ c.sizes.genset_kw|n0 }} | {{ c.metrics.npc|n0 }} | {{ c.metrics.lcoe_per_kwh|n2 }} | {{ c.metrics.initial_capital|n0 }} | {{ c.metrics.renewable_fraction_pct|n1 }} | {{ c.metrics.annual_bill|n0 }} | {{ c.metrics.simple_payback_yr|n1 }} |
+{% endfor %}
+{% if results.base_case %}
+| base: {{ results.base_case.label }} | {{ results.base_case.sizes.pv_kwp|n1 }} | {{ results.base_case.sizes.wind_count|n0 }} | {{ results.base_case.sizes.bess_kwh|n0 }} / {{ results.base_case.sizes.bess_kw|n0 }} | {{ results.base_case.sizes.genset_kw|n0 }} | {{ results.base_case.metrics.npc|n0 }} | {{ results.base_case.metrics.lcoe_per_kwh|n2 }} | {{ results.base_case.metrics.initial_capital|n0 }} | {{ results.base_case.metrics.renewable_fraction_pct|n1 }} | {{ results.base_case.metrics.annual_bill|n0 }} | — |
+{% endif %}
+
+## 4. Cost breakdown of the rank-1 design
+
+| Cost type | Present value ({{ run.currency }}) | Share of gross cost (%) |
+|---|---|---|
+{% for k, v in ex.npc_by_cost_type.items() %}
+| {{ k }} | {{ v.value|n0 }} | {{ v.share_pct|n1 }} |
+{% endfor %}
+| **NPC** | **{{ ex.npc|n0 }}** | |
+
+| Component | Present value ({{ run.currency }}) |
+|---|---|
+{% for k, v in ex.npc_by_component.items() %}
+| {{ k }} | {{ v|n0 }} |
+{% endfor %}
+
+Top cost drivers: {% for d in ex.top_cost_drivers %}{{ d.item }} ({{ d.share_pct|n1 }} %){% if not loop.last %}, {% endif %}{% endfor %}.
+
+{% for sentence in ex.sentences %}
+{{ sentence }}
+{% endfor %}
+
+## 5. Monthly energy and bills (rank 1)
+
+{% if monthly.bill_detail_after %}
+| Month | Load (kWh) | PV (kWh) | Wind (kWh) | Genset (kWh) | Grid import (kWh) | Grid export (kWh) | Unserved (kWh) | Bill before | Bill after |
+|---|---|---|---|---|---|---|---|---|---|
+{% for m in monthly.months %}
+| {{ m.month }} | {{ m.load_kwh|n0 }} | {{ m.pv_kwh|n0 }} | {{ m.wind_kwh|n0 }} | {{ m.genset_kwh|n0 }} | {{ m.grid_import_kwh|n0 }} | {{ m.grid_export_kwh|n0 }} | {{ m.unserved_kwh|n0 }} | {{ m.bill_before|n0 }} | {{ m.bill_after|n0 }} |
+{% endfor %}
+{% else %}
+| Month | Load (kWh) | PV (kWh) | Wind (kWh) | Genset (kWh) | Battery discharge (kWh) | Excess (kWh) | Unserved (kWh) |
+|---|---|---|---|---|---|---|---|
+{% for m in monthly.months %}
+| {{ m.month }} | {{ m.load_kwh|n0 }} | {{ m.pv_kwh|n0 }} | {{ m.wind_kwh|n0 }} | {{ m.genset_kwh|n0 }} | {{ m.bess_discharge_kwh|n0 }} | {{ m.excess_kwh|n0 }} | {{ m.unserved_kwh|n0 }} |
+{% endfor %}
+{% endif %}
+
+## 6. Sensitivity results
+
+{% if sensitivities %}
+{% for b in sensitivities %}
+### `{{ b.variable }}` (batch `{{ b.batch_id }}`)
+
+NPC elasticity at the base point: {{ b.elasticities[0].npc_elasticity|n2 }} ({{ b.elasticities[0].method }}).
+
+| Value | PV (kWp) | Battery (kWh) | Genset (kW) | NPC | LCOE |
+|---|---|---|---|---|---|
+{% for c in b.cases %}
+{% if c.optimal_sizes %}
+| {{ c.value }} | {{ c.optimal_sizes.pv_kwp|n1 }} | {{ c.optimal_sizes.bess_kwh|n0 }} | {{ c.optimal_sizes.genset_kw|n0 }} | {{ c.optimal_metrics.npc|n0 }} | {{ c.optimal_metrics.lcoe_per_kwh|n2 }} |
+{% else %}
+| {{ c.value }} | no feasible design | | | | |
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
+No sensitivity analysis has been run for this scenario.
+{% endif %}
+
+## 7. Most uncertain inputs
+
+{% for u in uncertainties %}
+- {{ u.input }}: {{ u.reason }}
+{% else %}
+- None flagged.
+{% endfor %}
+
+## 8. Method and documented differences from HOMER Pro
+
+{{ homer_differences }}
+
+## 9. Provenance
+
+| Item | Value |
+|---|---|
+| Engine | {{ results.provenance.engine }} |
+| Solver | {{ results.provenance.solver }} |
+| Seed | {{ results.provenance.seed }} |
+| Sources | {{ results.provenance.sources | join(", ") }} |
+| Wall time | {{ results.provenance.wall_time_s }} s |
+
+> {{ disclaimer }}

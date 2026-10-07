@@ -1,0 +1,19 @@
+id: pv.mono.generic
+type: pv
+name: "Generic monocrystalline PV array incl. string inverter (indicative costs)"
+currency: LKR
+cost_year: 2026
+status: unverified
+source: { document: "Helionyx indicative market estimate (LKR, 2026) — PLACEHOLDER, replace with supplier quotes or a market survey", retrieved_at: 2026-10-07 }
+unit: kWp
+capital_per_unit: 160000
+replacement_per_unit: 140000
+om_per_unit_year: 2000
+lifetime_years: 25
+technical:
+  derating_factor: 0.90
+  temp_coeff_pct_per_c: -0.35
+  inverter_efficiency: 0.97
+  faiman_u0: 25.0
+  faiman_u1: 6.84
+  albedo: 0.2

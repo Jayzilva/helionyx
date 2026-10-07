@@ -1,0 +1,112 @@
+# Helionyx — MVP Implementation Plan (v0.1)
+
+| | |
+|---|---|
+| **Scope** | PRD v0.1 features F1–F9 (Must) plus the v0.1 "Should" items F10–F13 |
+| **Source documents** | [`Helionyx-PRD.md`](../Helionyx-PRD.md), [`Helionyx-SRS.md`](../Helionyx-SRS.md) |
+| **Status** | In progress — see the status column below |
+| **Last updated** | 7 October 2026 |
+
+This plan turns the PRD and SRS into an ordered build. It records the
+implementation decisions that the SRS leaves open, the work packages, and the
+status of each. The weekly calendar in PRD §10.1 still applies; this document
+tracks *what* is built and *how*, not dates.
+
+---
+
+## 1. Build order
+
+Dependencies run strictly downwards: each layer only imports from layers below it.
+
+```text
+api        mcp_server.py · cli.py · http_app.py
+services   site/resource · load · tariff · scenario · run (jobs) · sensitivity · explain · export
+core       models · engine (pv, wind, dispatch kernel) · economics · billing · optimise
+infra      settings · db (SQLite) · artefacts (Parquet) · http cache · jobs · packs loader
+packs/lk   pack.yaml · tariffs · components · archetypes · emissions · defaults · sample data
+```
+
+| WP | Work package | SRS refs | Status |
+|---|---|---|---|
+| WP0 | Repository scaffold: `pyproject.toml`, src layout, ruff/mypy/pytest config, CI, Dockerfile, licence | §3.5, NFR-MAINT-01, NFR-LIC-01 | Done |
+| WP1 | Domain models (Pydantic v2) and error model `HNX-Exxx` | §4.6, §6 | Done |
+| WP2 | `lk` country pack: manifest, tariffs, components, 10 archetypes, emissions, defaults, bundled resource samples | FR-TAR-001, FR-CMP-001, FR-LOAD-002, §6.3 | Done (values unverified — see §4) |
+| WP3 | Infrastructure: workspace, SQLite metadata store, content-addressed Parquet store, HTTP response cache | §6.2, FR-RES-008 | Done |
+| WP4 | Resource module: NASA POWER, PVGIS, CSV import, UTC→local alignment, leap-day drop, gap filling | FR-RES-001…009 | Done |
+| WP5 | Load module: archetypes, variability, monthly calibration, composites, measured import, statistics | FR-LOAD-001…006, 008 | Done |
+| WP6 | Simulation engine: PV (pvlib), wind, battery, genset, LF/CC/grid-TOU dispatch in one Numba kernel | FR-SIM-001…009, §7.1–7.6 | Done |
+| WP7 | Economics and bill engine: NPC, LCOE, replacements, salvage, payback, IRR, emissions; TOU/block/flat, demand, export schemes | FR-ECO-001…004, FR-TAR-002…008, §7.7–7.10 | Done |
+| WP8 | Scenario builder: schema, defaults resolution, assumption audit, validation rules, hashing, versioning, YAML round-trip, outage masks | FR-SCN-001…009 | Done |
+| WP9 | Optimiser and jobs: parallel enumeration, feasibility, ranking, base case, async jobs with progress/cancel/timeout/limits | FR-OPT-001…004, FR-JOB-001…006 | Done |
+| WP10 | Sensitivity (one variable) with elasticities | FR-SEN-001, 003, 004 | Done |
+| WP11 | Results, explanation, monthly summary, compare runs | FR-RPT-001…005, FR-ADP-005 | Done |
+| WP12 | Exports: HOMER CSV + parameter sheet, Markdown report, time series CSV, scenario YAML | FR-EXP-001…003, FR-RPT-006 | Done |
+| WP13 | MCP server: 21 tools, resources, 6 prompts, structured errors, annotations, stdio + Streamable HTTP | §4.1–4.5 | Done |
+| WP14 | CLI: `serve`, `run`, `results`, `export`, `pack validate`, `eval grounding` | §4.7 | Done |
+| WP15 | Claude skill, grounding checker and evaluation prompt set | FR-SKL-001…003, §9.5 | Done (eval transcripts to be captured) |
+| WP16 | REopt v3 adapter (common adapter interface, input mapping, rate limit, fixture) | FR-ADP-001, 002 | Done — live run needs an API key |
+| WP17 | Reference cases RC-1…RC-3 and regression goldens | §9.2, FR-PRV-003 | Done |
+| WP18 | Documentation: README, quickstart, methodology, data-pack guide, skill guide, changelog | NFR-USE-03 | Done |
+
+## 2. Implementation decisions
+
+Decisions the SRS leaves open, or where the MVP deliberately simplifies. Each one
+is reversible without changing the public tool contract.
+
+| # | Decision | Rationale |
+|---|---|---|
+| D1 | **MCP Python SDK 2.x** (`mcp.server.mcpserver.MCPServer`, the renamed FastMCP). Tools return `CallToolResult` annotated with a Pydantic output model, so every tool has an `outputSchema`, `structuredContent` and a one-paragraph text summary (IF-MCP-04). | Current SDK major version; v1 `FastMCP` import path no longer exists. |
+| D2 | **Metadata store uses the standard-library `sqlite3`** behind a small repository class. SQLAlchemy 2.0 is introduced with PostgreSQL in hosted mode (v1.0). | One fewer dependency for local-first MVP; the repository class is the seam for the swap. |
+| D3 | **Parallelism uses a Numba `prange` kernel over candidates** inside a worker thread, instead of a `ProcessPoolExecutor`. | Avoids pickling large arrays on Windows; each candidate writes to its own row so results are bit-identical for any thread count (FR-OPT-003). |
+| D4 | **Search runs in chunks** (≈ 20 per job) so the job can report progress, honour `cancel_job` and enforce the timeout between chunks. | FR-JOB-002, FR-JOB-004. |
+| D5 | `run_optimization` / `run_sensitivity` accept an optional `wait_seconds` (0–20, default 0). With 0 they return `job_id` immediately (FR-JOB-001); with a value they stream `notifications/progress` for up to that long (FR-JOB-003). | Progress notifications are only meaningful while a request is open. |
+| D6 | **Year-boundary handling in time alignment** wraps circularly within the requested year (the first local half-hour of 1 January uses the last UTC hour of 31 December of the same year). Recorded in provenance. | Avoids a second API call for one hour; error is negligible for pre-feasibility. |
+| D7 | **CC hold** (`cc_hold_until_setpoint`) applies in deficit steps only; in surplus steps the genset is always off. | Running a genset into a renewable surplus only produces excess energy. |
+| D8 | **Block tariffs** are incremental slabs; each slab may carry its own fixed charge, applied when the monthly consumption falls in that slab. | Matches CEB domestic structure while keeping one schema. |
+| D9 | **Converter** cost is charged per kW of battery inverter power (`bess_kw`); the PV inverter is included in the PV cost. | AC-coupled topology (C7). |
+| D10 | **Elasticities** use a ±1 % central difference on the optimal design at the base point. Inputs with a base value of 0 report `null`. | FR-SEN-003. |
+| D11 | **Excel reports** (`format: xlsx`) return HNX-E008 in v0.1. | Excel is a v0.2 Must (FR-RPT-006). |
+| D12 | HTTP transport (IF-MCP-02, Could in 0.1) is available through Starlette + uvicorn with `/healthz`, **without authentication**, and binds to `127.0.0.1` by default. OAuth (IF-MCP-08) arrives in v1.0. | Lets integrators test locally; never expose it publicly before v1.0. |
+
+## 3. Definition of done for v0.1
+
+- `pytest` green: unit, property (Hypothesis: energy balance ≤ 0.001 kWh, SOC bounds, no simultaneous charge/discharge, energy-preserving load scaling), contract (every tool has input/output schema; errors carry hints; outputs carry provenance and disclaimer) and regression (RC-1…RC-3 byte-identical reruns).
+- Benchmark: 1,000-candidate search ≤ 30 s warm on a 4-core laptop (NFR-PERF-01).
+- `helionyx serve` connects to Claude Desktop / Claude Code and completes the PRD §8 happy path.
+- Grounding evaluation (§9.5) run on 30 prompts with ≥ 95 % score — **manual step before release**.
+- Docs per NFR-USE-03.
+
+### Verification status (7 October 2026)
+
+| Check | Result |
+|---|---|
+| Test suite (`pytest`, offline) | 81 tests pass: unit, Hypothesis property, MCP contract, regression, benchmark |
+| Energy balance | Max error ≈ 3 × 10⁻¹⁴ kWh per step on every candidate (limit 0.001) |
+| Reproducibility | RC-1…RC-3 rerun in fresh workspaces give byte-identical results; goldens in `reference_cases/expected/` |
+| Performance | 1,000-candidate off-grid search: ≈ 9 s end to end (kernel ≈ 0.1 s; economics, payback and persistence dominate) |
+| MCP | 21 tools with input/output schemas and annotations, 9 resources, 6 prompts; stdio and Streamable HTTP (`/mcp`, `/healthz`) |
+| Lint / types | `ruff check src tests` clean; `mypy` strict on `core/` clean |
+| Grounding evaluation | Checker and 30-prompt set shipped; **transcripts not yet captured** |
+
+## 4. Open items blocking a public release
+
+These come from SRS Appendix A and PRD §14. The code is complete for them; the
+*data* is not.
+
+| Ref | Item | Current state |
+|---|---|---|
+| V3 / Q1 | Real CEB and LECO tariff rates, TOU windows and export-scheme rules | Pack ships **placeholder rates marked `status: unverified`**. `validate_scenario` raises HNX-W001 until a maintainer verifies them. |
+| V8 | Diesel and Sri Lankan grid emission factors | Indicative values, marked unverified. |
+| V9 | Genset fuel-curve defaults vs local datasheets | Literature defaults (F0 = 0.08145, F1 = 0.246). |
+| — | Component costs in LKR | Indicative market estimates, marked unverified. |
+| V2 | PVGIS coverage for Sri Lanka | Adapter implemented; falls back with HNX-E003 when out of coverage. |
+| V4 | REopt API key and off-grid field mapping | Adapter implemented against a recorded fixture; live run untested. |
+| V6 | HOMER Pro import check of exported files | v0.2 parity study. |
+| — | Grounding evaluation transcripts | Prompt set and checker shipped; transcripts must be captured in a real client. |
+
+## 5. Deferred to v0.2 and later
+
+Two-variable sensitivity (FR-SEN-002), Excel reports, measured-load extension
+(FR-LOAD-007), heuristic optimiser (FR-OPT-005), MicroGridsPy and SAMA adapters,
+`helionyx pack update`, Pareto search, hosted mode with Entra ID, multi-year growth,
+DC coupling.

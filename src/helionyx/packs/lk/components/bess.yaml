@@ -1,0 +1,19 @@
+id: bess.lfp.generic
+type: bess
+name: "Generic LFP battery (indicative costs)"
+currency: LKR
+cost_year: 2026
+status: unverified
+source: { document: "Helionyx indicative market estimate (LKR, 2026) — PLACEHOLDER, replace with supplier quotes or a market survey", retrieved_at: 2026-10-07 }
+unit: kWh
+capital_per_unit: 95000
+replacement_per_unit: 80000
+om_per_unit_year: 1000
+lifetime_years: 12
+technical:
+  round_trip_efficiency: 0.92
+  soc_min: 0.10
+  soc_initial: 1.00
+  c_rate_max: 1.0
+  float_life_years: 12
+  lifetime_throughput_kwh_per_kwh: 4000

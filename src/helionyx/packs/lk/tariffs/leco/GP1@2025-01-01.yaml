@@ -1,0 +1,25 @@
+id: lk.leco.GP1@2025-01-01
+utility: LECO
+category: GP1
+name: "General Purpose GP-1 (flat) — placeholder rates"
+currency: LKR
+effective_from: 2025-01-01
+effective_to: null
+status: unverified
+source:
+  document: "PLACEHOLDER — illustrative structure only; rates are NOT taken from a PUCSL tariff decision"
+  url: "https://www.pucsl.gov.lk/"
+  retrieved_at: 2026-10-07
+  verified_by: null
+charges:
+  fixed_monthly: 1000.0
+  energy:
+    type: flat
+    rate_per_kwh: 40.0
+  minimum_monthly: 0.0
+  levies_pct: 0.0
+export_schemes:
+  net_metering:   { netting: total, credit_carry_forward: true, year_end: forfeit }
+  net_accounting: { export_rate_per_kwh: 20.0, settlement: monthly }
+  net_plus:       { export_rate_per_kwh: 20.0, settlement: monthly }
+notes: "Unverified placeholder values for development and testing. Replace with the current PUCSL-approved schedule before use (SRS Appendix A, V3)."

@@ -1,0 +1,13 @@
+# Emission factors (SRS §7.9). Status: indicative, to be verified (SRS Appendix A, V8).
+diesel_kg_co2_per_l:
+  value: 2.68
+  source: "IPCC 2006 Guidelines, Vol. 2 Ch. 3, default CO2 factor for gas/diesel oil (74,100 kg/TJ) converted at 0.0362 TJ/kL — unverified for local fuel"
+  date: 2026-10-07
+grid_kg_co2_per_kwh:
+  value: 0.65
+  source: "Indicative Sri Lankan grid average emission factor — PLACEHOLDER, verify against the latest Sustainable Energy Authority / CEB statistics"
+  date: 2026-10-07
+grid_renewable_fraction:
+  value: 0.0
+  source: "SRS §7.8 default: grid energy counted as non-renewable in the renewable fraction"
+  date: 2026-10-07

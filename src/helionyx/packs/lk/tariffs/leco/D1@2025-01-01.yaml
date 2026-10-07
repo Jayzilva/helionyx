@@ -1,0 +1,30 @@
+id: lk.leco.D1@2025-01-01
+utility: LECO
+category: D1
+name: "Domestic D-1 (block) — placeholder rates"
+currency: LKR
+effective_from: 2025-01-01
+effective_to: null
+status: unverified
+source:
+  document: "PLACEHOLDER — illustrative structure only; rates are NOT taken from a PUCSL tariff decision"
+  url: "https://www.pucsl.gov.lk/"
+  retrieved_at: 2026-10-07
+  verified_by: null
+charges:
+  energy:
+    type: block
+    blocks:
+      - { up_to_kwh: 30,   rate_per_kwh: 6.0,  fixed_monthly: 100.0 }
+      - { up_to_kwh: 60,   rate_per_kwh: 9.0,  fixed_monthly: 250.0 }
+      - { up_to_kwh: 90,   rate_per_kwh: 18.0, fixed_monthly: 400.0 }
+      - { up_to_kwh: 120,  rate_per_kwh: 30.0, fixed_monthly: 1000.0 }
+      - { up_to_kwh: 180,  rate_per_kwh: 50.0, fixed_monthly: 1500.0 }
+      - { up_to_kwh: null, rate_per_kwh: 75.0, fixed_monthly: 2100.0 }
+  minimum_monthly: 0.0
+  levies_pct: 0.0
+export_schemes:
+  net_metering:   { netting: total, credit_carry_forward: true, year_end: forfeit }
+  net_accounting: { export_rate_per_kwh: 20.0, settlement: monthly }
+  net_plus:       { export_rate_per_kwh: 20.0, settlement: monthly }
+notes: "Unverified placeholder values for development and testing. Replace with the current PUCSL-approved schedule before use (SRS Appendix A, V3)."

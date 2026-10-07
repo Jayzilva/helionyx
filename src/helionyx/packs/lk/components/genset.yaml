@@ -1,0 +1,17 @@
+id: genset.diesel.generic
+type: genset
+name: "Generic diesel genset (indicative costs)"
+currency: LKR
+cost_year: 2026
+status: unverified
+source: { document: "Helionyx indicative market estimate (LKR, 2026) — PLACEHOLDER, replace with supplier quotes or a market survey", retrieved_at: 2026-10-07 }
+unit: kW
+capital_per_unit: 75000
+replacement_per_unit: 65000
+om_per_unit_year: 2500
+lifetime_years: 20
+technical:
+  min_load_ratio: 0.25
+  fuel_curve_intercept_l_per_h_per_kw: 0.08145
+  fuel_curve_slope_l_per_kwh: 0.246
+  lifetime_hours: 15000

@@ -1,0 +1,37 @@
+# Pack defaults applied by validate_scenario when the user leaves a field unset.
+# Every value carries a source and date and appears in the assumption audit (FR-SCN-005).
+roof_kwp_per_m2:
+  value: 0.15
+  source: "Typical rooftop packing density for ~21% efficient modules with access spacing (indicative)"
+  date: 2026-10-07
+default_components:
+  pv: pv.mono.generic
+  wind: wind.10kw.generic
+  bess: bess.lfp.generic
+  genset: genset.diesel.generic
+  converter: converter.bidirectional.generic
+values:
+  grid.export_scheme:              {value: none, source: "Conservative default: no export credit unless the user selects a scheme", date: 2026-10-07}
+  grid.max_import_kw:              {value: 100000, source: "No import limit unless the connection capacity is given", date: 2026-10-07}
+  grid.max_export_kw:              {value: 100000, source: "No export limit unless the utility approval is given", date: 2026-10-07}
+  dispatch.strategy:               {value: load_following, source: "HOMER Pro default dispatch for off-grid and outage hours", date: 2026-10-07}
+  dispatch.cc_setpoint_soc:        {value: 0.8, source: "SRS §7.6.2 default set-point", date: 2026-10-07}
+  dispatch.cc_hold_until_setpoint: {value: true, source: "SRS §7.6.2 default", date: 2026-10-07}
+  dispatch.grid.battery_discharge_periods: {value: [peak], source: "SRS §7.6.3: discharge in the tariff peak period", date: 2026-10-07}
+  dispatch.grid.grid_charging:     {value: false, source: "SRS §7.6.3: grid charging off by default", date: 2026-10-07}
+  dispatch.grid.charge_periods:    {value: [off_peak], source: "SRS §7.6.3 example", date: 2026-10-07}
+  dispatch.grid.soc_reserve_for_outage: {value: 0.2, source: "Helionyx default reserve for grid outages (indicative)", date: 2026-10-07}
+  economics.project_life_years:    {value: 20, source: "Typical PV project life for pre-feasibility studies", date: 2026-10-07}
+  economics.nominal_discount_rate: {value: 0.12, source: "Indicative LKR cost of capital — PLACEHOLDER, verify against current lending rates", date: 2026-10-07}
+  economics.inflation_rate:        {value: 0.05, source: "Indicative medium-term inflation target — PLACEHOLDER, verify against CBSL", date: 2026-10-07}
+  economics.fuel_price_per_l:      {value: 283.0, source: "Indicative auto-diesel retail price, LKR/L — PLACEHOLDER, verify against the latest CPC price notice", date: 2026-10-07}
+  economics.fuel_price_escalation_real: {value: 0.0, source: "No real escalation assumed", date: 2026-10-07}
+  economics.grid_price_escalation_real: {value: 0.0, source: "No real escalation assumed", date: 2026-10-07}
+  economics.system_fixed_capital:  {value: 0.0, source: "No system fixed costs assumed", date: 2026-10-07}
+  economics.system_fixed_om_per_year: {value: 0.0, source: "No system fixed costs assumed", date: 2026-10-07}
+  constraints.max_capacity_shortage: {value: 0.0, source: "HOMER Pro default maximum annual capacity shortage", date: 2026-10-07}
+  options.demand_peak_factor:      {value: 1.0, source: "SRS FR-TAR-008 default (hourly peaks understate 15-min peaks)", date: 2026-10-07}
+  options.max_candidates:          {value: 50000, source: "SRS FR-SCN-002 default", date: 2026-10-07}
+  options.keep_timeseries_top_n:   {value: 10, source: "SRS FR-SIM-009 default", date: 2026-10-07}
+  components.pv.dc_ac_ratio:       {value: 1.2, source: "Typical rooftop DC/AC ratio", date: 2026-10-07}
+  seed:                            {value: 42, source: "Helionyx default seed", date: 2026-10-07}

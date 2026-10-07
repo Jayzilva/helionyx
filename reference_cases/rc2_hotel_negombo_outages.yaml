@@ -1,0 +1,27 @@
+# RC-2 variant with scheduled evening grid outages (AT-04). Change soc_reserve_for_outage to compare.
+study:
+  site: {name: "RC-2 Negombo hotel (outages)", latitude: 7.2083, longitude: 79.8358, country_pack: lk}
+  resource: {source: nasa_power, year: 2023}
+  loads:
+    - components: [{archetype: hotel, count: 60}]
+      monthly_kwh: [50000, 47000, 51000, 46000, 43000, 40000, 43000, 44000, 41000, 43000, 44000, 50000]
+      seed: 202
+scenario:
+  name: "RC-2 Hotel PV + BESS with scheduled outages"
+  grid:
+    mode: grid_connected
+    tariff_id: lk.ceb.H2
+    export_scheme: net_accounting
+    max_import_kw: 400
+    max_export_kw: 250
+    availability:
+      type: scheduled
+      windows: [{days: all, start: "18:30", end: "20:30"}]
+  components:
+    pv: {sizes_kwp: {min: 0, max: 250, step: 25}, dc_ac_ratio: 1.2, tilt_deg: 10, azimuth_deg: 180}
+    bess: {sizes_kwh: [0, 100, 200, 300, 400], power_kw_per_kwh: 0.5}
+  dispatch:
+    grid: {battery_discharge_periods: [peak], soc_reserve_for_outage: 0.3}
+  constraints: {roof_area_m2: 1200, max_capacity_shortage: 1.0}
+  options: {analysis_date: 2026-10-07}
+  seed: 42
