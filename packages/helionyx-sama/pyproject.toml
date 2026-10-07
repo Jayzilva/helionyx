@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "helionyx-sama"
-version = "0.2.0"
+version = "1.0.0.dev0"
 description = "SAMA cross-check adapter for Helionyx (separate package: SAMAPy is AGPL-3.0)"
 readme = "README.md"
 license = "AGPL-3.0-or-later"

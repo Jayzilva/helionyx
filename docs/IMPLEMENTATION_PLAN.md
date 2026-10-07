@@ -1,10 +1,10 @@
-# Helionyx — Implementation Plan (v0.1 MVP and v0.2 Validation)
+# Helionyx — Implementation Plan (v0.1 MVP, v0.2 Validation, v1.0)
 
 | | |
 |---|---|
 | **Scope** | v0.1: PRD F1–F9 plus the v0.1 "Should" items F10–F13. v0.2: PRD §10 Validation release (§6 below) |
 | **Source documents** | [`Helionyx-PRD.md`](../Helionyx-PRD.md), [`Helionyx-SRS.md`](../Helionyx-SRS.md) |
-| **Status** | v0.1 done (branch `feat/mvp-v0.1`); v0.2.0 released 7 October 2026 with placeholder data; HOMER parity study deferred |
+| **Status** | v0.1 done (branch `feat/mvp-v0.1`); v0.2.0 released 7 October 2026 with placeholder data; v1.0 in development (branch `feat/v1.0`, §7) |
 | **Last updated** | 7 October 2026 |
 
 This plan turns the PRD and SRS into an ordered build. It records the
@@ -145,3 +145,26 @@ reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
 | D17 | Installed pack releases override the bundled pack only when their CalVer is newer. | A stale download can never downgrade data. |
 | D18 | v0.2.0 ships with the placeholder `lk` pack data (marked `unverified`, HNX-W001). Verified values arrive as a data-pack release (`pack update`), no code release needed. | Verified tariff and cost data are not yet available; the pack release path (WP27) decouples data from code. |
 | D19 | Pilot users are simulated by scripted MCP sessions until real pilots are recruited. | Exercises the PRD §8 happy path and the five-minute target in CI. |
+
+## 7. v1.0 release
+
+PRD §10: multi-objective optimisation, hosted mode, ecosystem packaging, paper draft. Plus the
+v1.0 requirements in the SRS and the items deferred in §5.
+
+| WP | Work package | SRS / PRD refs | Status |
+|---|---|---|---|
+| WP33 | Annual load growth for multi-year analysis | FR-LOAD-009, F18 | Open |
+| WP34 | Multi-year capacity expansion with load growth | FR-OPT-007, F18 | Open |
+| WP35 | Pareto front and heuristic search promoted to Must: acceptance tests (no dominated point returned; heuristic within 1 % on every reference case) | FR-OPT-005, FR-OPT-006, F16, F17 | Code done in v0.2; tests to extend |
+| WP36 | OAuth 2.1 resource server with Microsoft Entra ID: protected resource metadata, issuer/audience/expiry checks, per-user data isolation; replaces `HNX_API_KEY` | IF-MCP-08, NFR-SEC-03, AT-10 | Open |
+| WP37 | `delete_scenario` and 90-day retention in hosted mode | FR-PRV-004 | Open |
+| WP38 | Azure Container Apps deployment (TLS only, managed identity, Application Insights) | F19, IF-MCP-02 | Open |
+| WP39 | OpenTelemetry export for logs and per-run timing | NFR-OBS-01 | Open |
+| WP40 | Ecosystem packaging: MCP registry listing, PowerMCP contribution | F20 | Open |
+| WP41 | Grounding checker v1.0 criteria (score 1.0, unmatched numbers flagged) and a full Sonnet transcript run | §9.5, FR-SKL-003 | Harness ready (Sonnet only, token budget) |
+| WP42 | Wind in the REopt and SAMA adapters; off-grid REopt mapping | FR-ADP-002, FR-ADP-004 | Open |
+| WP43 | DC-coupled PV–battery topology and micro-hydro | FR-SIM-010, F21 (Could) | Open |
+| — | HOMER parity study | F15 (Must in v1.0), PRD Q3 | Blocked: no HOMER Pro access |
+| — | Verified `lk` pack data (tariffs, emission factors, fuel curves, LKR costs) | V3, V8, V9 | Placeholder data until publication (D18) |
+| — | Real pilot users and paper draft | PRD §10 | Not code tasks |
+
