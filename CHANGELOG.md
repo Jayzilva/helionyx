@@ -11,7 +11,8 @@ Development continues on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.
 ### Added
 
 - MCPB bundle (`mcpb/`, uv runtime): installs `helionyx` from PyPI for one-click installs in
-  Claude Desktop and for Smithery, which now takes MCPB bundles or remote URLs.
+  Claude Desktop and for Smithery, which now takes MCPB bundles or remote URLs. Listed on
+  Smithery as `gitdevjay/helionyx`; `scripts/build_mcpb.py` builds both bundles.
 
 ### Removed
 

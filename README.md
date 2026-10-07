@@ -43,6 +43,7 @@ of it. See the [Product Requirements Document](https://github.com/Jayzilva/helio
 |---|---|
 | Source code | [github.com/Jayzilva/helionyx](https://github.com/Jayzilva/helionyx) |
 | PyPI package | [pypi.org/project/helionyx](https://pypi.org/project/helionyx/) — `uvx helionyx serve` or `pip install helionyx` |
+| Smithery | [smithery.ai/servers/gitdevjay/helionyx](https://smithery.ai/servers/gitdevjay/helionyx) |
 | Official MCP Registry | Server name `io.github.Jayzilva/helionyx` — [registry entry (JSON)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Jayzilva/helionyx) |
 
 MCP clients that read the official registry can install Helionyx by its server name. The
