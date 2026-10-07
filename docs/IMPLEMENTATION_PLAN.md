@@ -125,8 +125,8 @@ reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
 | WP22 | Pareto front over NPC, CO₂ and capacity shortage (`get_pareto_front`) | FR-OPT-006 (Could) | Done |
 | WP23 | Partial-year measured load extension | FR-LOAD-007 | Done |
 | WP24 | Subprocess adapter protocol `helionyx-adapter-io/1` | FR-ADP-001 | Done |
-| WP25 | `helionyx-microgridspy` package (EUPL-1.2), LP with HiGHS | FR-ADP-003 | Done — live runs on RC-2 and RC-3 |
-| WP26 | `helionyx-sama` package (AGPL-3.0), particle swarm | FR-ADP-004 | Done — live run on RC-3 (see docs/adapters.md) |
+| WP25 | `helionyx-microgridspy` package (EUPL-1.2), LP with HiGHS | FR-ADP-003 | Done — live runs on RC-1, RC-2 and RC-3 (SRS AC: RC-1 and RC-3) |
+| WP26 | `helionyx-sama` package (AGPL-3.0), particle swarm | FR-ADP-004 | Done — live run on RC-3 agrees with MicroGridsPy within 0.1 % of NPC (docs/adapters.md) |
 | WP27 | Data-pack releases: `pack build`, checksum-verified `pack update` | §6.2 | Done |
 | WP28 | HOMER parity kit: protocol, template, `helionyx parity compare` | F15, §9.4 | Tooling done; **HOMER results pending (needs HOMER Pro access, PRD Q3)** |
 | WP29 | REopt adapter hardening and live verification | FR-ADP-002 (Must in v0.2) | Done |

@@ -115,6 +115,26 @@ def configure(d: Any, inp: dict[str, Any], k: float) -> dict[str, float]:
     return {"cbt_r": float(d.Cbt_r)}
 
 
+def _resync(d: Any) -> None:
+    """Push the configured inputs into every loaded samapy module.
+
+    ``samapy.core`` imports ``Fitness`` together with ``Input_Data``, and Fitness copies the
+    input values into its own globals at import time, before ``configure`` runs. Without this
+    step the optimiser would size SAMA's built-in default case.
+    """
+    attrs = vars(d)
+    for name, mod in list(sys.modules.items()):
+        if not name.startswith("samapy.") or mod is None or name == "samapy.core.Input_Data":
+            continue
+        for g in list(vars(mod)):
+            if g in attrs and not callable(attrs[g]):
+                setattr(mod, g, attrs[g])
+
+
+def _crf(i: float, n: int) -> float:
+    return 1.0 / n if abs(i) < 1e-12 else i * (1 + i) ** n / ((1 + i) ** n - 1)
+
+
 def solve(inp: dict[str, Any], workdir: Path) -> dict[str, Any]:
     os.chdir(workdir)
     os.environ["MPLBACKEND"] = "Agg"
@@ -132,6 +152,7 @@ def solve(inp: dict[str, Any], workdir: Path) -> dict[str, Any]:
 
         scale = float(inp.get("options", {}).get("currency_scale", DEFAULT_SCALE))
         configure(InData, inp, 1.0 / scale)
+        _resync(InData)
         from samapy.optimizers.swarm import Swarm
 
         opt = Swarm()
@@ -145,19 +166,26 @@ def solve(inp: dict[str, Any], workdir: Path) -> dict[str, Any]:
         (re_min is None or re_pct is None or re_pct / 100.0 >= float(re_min) - 1e-6)
     pv, bat, dg, inv = _grab(log, "Cpv  (kW)"), _grab(log, "Cbat (kWh)"), _grab(log, "Cdg  (kW)"), \
         _grab(log, "Cinverter (kW)")
+    npc = _money(_grab(log, "NPC "), scale)
+    eco = inp["economics"]
+    served = float(np.sum(inp["time_series"]["load_kw"])) * (1.0 - (lpsp or 0.0) / 100.0)
+    # SAMA prints LCOE rounded to 2 decimals; recompute it from NPC for full precision.
+    lcoe = npc * _crf(float(eco["real_discount_rate"]), int(eco["project_life_years"])) / served \
+        if npc is not None and served > 0 else None
     return {
         "schema": SCHEMA, "status": "feasible" if feasible else "infeasible",
         "solver": {"name": "sama", "version": version("samapy"),
                    "label": "particle swarm (SAMA), rule-based dispatch"},
         "sizes": {"pv_kwp": pv or 0.0, "wind_count": 0.0, "bess_kwh": bat or 0.0, "bess_kw": inv or 0.0,
                   "genset_kw": dg or 0.0},
-        "metrics": {"npc": _money(_grab(log, "NPC "), scale), "lcoe_per_kwh": _money(_grab(log, "LCOE "), scale),
+        "metrics": {"npc": npc, "lcoe_per_kwh": lcoe,
                     "initial_capital": _money(_grab(log, "Initial Cost "), scale),
                     "operating_cost_per_yr": _money(_grab(log, "Operating Cost "), scale),
                     "renewable_fraction_pct": re_pct, "capacity_shortage_pct": lpsp,
                     "fuel_l_per_yr": _grab(log, "Annual fuel consumed by Generator ") or 0.0},
         "messages": [f"optimisation {time.perf_counter() - t0:.0f} s", "bess_kw reports SAMA's DC inverter size",
-                     f"money passed to SAMA divided by {scale:g} and scaled back"],
+                     f"money passed to SAMA divided by {scale:g} and scaled back",
+                     "LCOE = NPC x CRF / served energy (grid sales not included)"],
     }
 
 

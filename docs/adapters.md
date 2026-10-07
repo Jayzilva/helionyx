@@ -92,17 +92,34 @@ All values use the **unverified placeholder** data of the `lk` pack and are meth
 | REopt (live API) | 180 | 0 | 126.9 M | Run with REopt's default 0.5 %/yr PV degradation (now set to 0); simple payback 4.2 years vs 4.0 native |
 | MicroGridsPy | 180 | 0 | 86.2 M | Energy price only: demand and fixed charges are not modelled, so the grid cost and NPC are lower |
 
+**RC-1 island village (off-grid, PV + wind + BESS + diesel, shortage ≤ 1 %):**
+
+| Solver | PV (kWp) | Wind (turbines) | BESS (kWh) | Genset (kW) | NPC (LKR) | RF (%) | Notes |
+|---|---|---|---|---|---|---|---|
+| Native | 75 | 4 | 150 | 40 | 101.3 M | 89.4 | Shortage 0.04 %; fuel 9,525 L/yr |
+| MicroGridsPy | 74.1 | 3.9 | 114.0 | 17.2 | 85.3 M | 88.5 | Uses the full 1 % shortage; fuel 8,264 L/yr; 122 s |
+
 **RC-3 estate village (off-grid, PV + BESS + diesel, shortage ≤ 2 %):**
 
 | Solver | PV (kWp) | BESS (kWh) | Genset (kW) | NPC (LKR) | Notes |
 |---|---|---|---|---|---|
 | Native | 70 | 150 | 0 | 36.9 M | 10 kWp / 50 kWh size steps; shortage 1.55 % |
 | MicroGridsPy | 65.8 | 117.1 | 0.9 | 30.8 M | Continuous LP with perfect foresight uses the full 2 % shortage allowance; annuity costing |
-| SAMA | see below | | | | |
-
-SAMA status: see the note at the end of this page.
+| SAMA (PSO 150 × 50) | 64.6 | 121.2 | 2.5 | 30.7 M | Shortage 2.0 %; fuel 540 L/yr; 156 s |
 
 All three agree on the architecture of RC-2 (PV only, about 175–180 kWp at the roof limit).
-On RC-3 the LP finds a cheaper design because it sizes continuously, dispatches with perfect
-foresight and spends the whole shortage allowance; this is the expected direction of the
-difference.
+On RC-1 and RC-3 the two external solvers find designs about 15–20 % cheaper than the native
+optimum. MicroGridsPy and SAMA, with completely different methods (LP with perfect foresight vs
+particle swarm with rule-based dispatch), agree with each other on RC-3 to within 0.1 % of NPC.
+The gap to the native result comes mainly from the native size grid: the reference cases search
+gensets of 0, 15, 20, 25 and 30 kW (RC-3) and spend less of the shortage allowance, while both
+external solvers choose a 1–3 kW genset and use the full allowance. Adding finer genset and
+battery sizes to the native search space closes most of the gap; this is the kind of finding the
+cross-check is meant to surface.
+
+### Adapter pitfall found during verification
+
+`samapy.core` imports `Fitness` together with `Input_Data`, and `Fitness` copies every input
+into module globals at import time. An adapter that only overwrites `InData` therefore sizes
+SAMA's built-in default case. `helionyx-sama` re-synchronises all loaded `samapy` modules after
+configuring the inputs (`_resync`).
