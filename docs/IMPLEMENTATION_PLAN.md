@@ -149,7 +149,7 @@ reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
 
 ## 7. v1.0 release
 
-PRD §10: multi-objective optimisation, hosted mode, ecosystem packaging, paper draft. Plus the
+PRD §10: multi-objective optimisation, hosted mode, ecosystem packaging, TechRxiv preprint (JOSS later in 2027). Plus the
 v1.0 requirements in the SRS and the items deferred in §5.
 
 | WP | Work package | SRS / PRD refs | Status |
@@ -167,5 +167,5 @@ v1.0 requirements in the SRS and the items deferred in §5.
 | WP43 | DC-coupled PV–battery topology and micro-hydro | FR-SIM-010, F21 (Could) | Open |
 | — | HOMER parity study | F15 (Must in v1.0), PRD Q3 | Blocked: no HOMER Pro access |
 | — | Verified `lk` pack data (tariffs, emission factors, fuel curves, LKR costs) | V3, V8, V9 | Placeholder data until publication (D18) |
-| — | Real pilot users and paper draft | PRD §10 | Not code tasks |
+| — | Real pilot users; TechRxiv preprints; JOSS submission after six months of public history | PRD §9, §10 | Not code tasks |
 

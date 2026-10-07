@@ -18,6 +18,7 @@
 | 0.1.1 | 7 October 2026 | MVP implementation started. The build plan, implementation decisions and open data items are tracked in [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). No scope changes. |
 | 0.2 | 7 October 2026 | v0.2 Validation code delivered (plan §6). Licence finding: MicroGridsPy (EUPL-1.2) joins SAMA (AGPL-3.0) as a separately distributed adapter package (§13). HOMER parity tooling ready; the study itself still needs HOMER Pro access (Q3) and the pilot users are still to be recruited. |
 | 0.2.1 | 7 October 2026 | v0.2.0 released with placeholder `lk` data (marked unverified). HOMER parity study deferred until HOMER Pro access is available (Q3). Pilot users simulated by scripted mock sessions (EPC and planner) until real pilots are recruited. |
+| 0.3 | 7 October 2026 | v0.3.0 released (multi-year analysis); repository public; package on PyPI and listed in the official MCP Registry. Academic targets changed from MERCon or SoftwareX to JOSS plus TechRxiv/arXiv preprints: SoftwareX charges article fees (up to 760 USD) and MERCon a registration fee. MERCon stays optional for a separate cross-solver paper if a university covers the fee. |
 
 ---
 
@@ -181,7 +182,8 @@ Priority key: **M** = Must, **S** = Should, **C** = Could, **—** = not in that
 | Accuracy | Renewable fraction compared with HOMER Pro | Within ±5 percentage points | v0.2 |
 | Usability | Median time from first prompt to ranked results for pilot users | ≤ 5 minutes | v0.2 |
 | Adoption | GitHub stars / external contributors / pilot organisations | 50 / 3 / 2 | v1.0 |
-| Academic | Parity paper submitted (MERCon or SoftwareX) | 1 | after v0.2 |
+| Academic | Software paper accepted in JOSS (free, peer-reviewed; needs ≥ 6 months of public history) | 1 | 2027 (earliest submission ≈ Apr–May 2027) |
+| Academic | Preprints posted on TechRxiv (and arXiv eess.SY once endorsed): architecture and grounding; cross-solver comparison (HOMER parity when HOMER Pro is available) | 2 | Jan and Mar 2027 |
 | Ecosystem | MCP registry listing and PowerMCP contribution | Done | v1.0 |
 
 The HOMER parity targets are a hypothesis to test, not a release gate. If results diverge, the study reports where and why.
@@ -194,7 +196,7 @@ Week 1 starts Monday 12 October 2026.
 |---|---|---|---|
 | v0.1 MVP | 1–6 | 12 Oct – 22 Nov 2026 | F1–F9, plus the F10–F13 items marked S |
 | v0.2 Validation | 7–10 | 23 Nov – 20 Dec 2026 | HOMER parity study, SAMA and MicroGridsPy adapters, two-variable sensitivity, Excel reports, two pilot users |
-| v1.0 | 11–16 | 21 Dec 2026 – 31 Jan 2027 | Multi-objective optimisation, hosted mode, ecosystem packaging, paper draft (includes a holiday buffer) |
+| v1.0 | 11–16 | 21 Dec 2026 – 31 Jan 2027 | Multi-objective optimisation, hosted mode, ecosystem packaging, TechRxiv preprint (includes a holiday buffer) |
 
 ### 10.1 MVP weekly plan
 
