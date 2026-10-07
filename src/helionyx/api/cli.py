@@ -43,7 +43,7 @@ def version() -> None:
 @app.command()
 def serve(
     transport: Annotated[str, typer.Option(help="stdio or http")] = "stdio",
-    host: Annotated[str, typer.Option(help="Bind address for http (no auth in v0.1: keep it local)")] = "127.0.0.1",
+    host: Annotated[str, typer.Option(help="Bind address for http; non-local needs HNX_API_KEY")] = "127.0.0.1",
     port: Annotated[int, typer.Option()] = 8080,
 ) -> None:
     """Start the MCP server."""
@@ -52,12 +52,16 @@ def serve(
 
         mcp.run("stdio")
     elif transport == "http":
+        import os
+
         import uvicorn
 
         from helionyx.api.http_app import create_app
 
-        if host not in ("127.0.0.1", "localhost", "::1"):
-            typer.secho("Warning: HTTP mode has no authentication in v0.1.", fg=typer.colors.YELLOW, err=True)
+        if host not in ("127.0.0.1", "localhost", "::1") and not os.environ.get("HNX_API_KEY"):
+            typer.secho("Refusing to bind to a non-local address without HNX_API_KEY (bearer key auth). "
+                        "OAuth with Entra ID arrives in v1.0.", fg=typer.colors.RED, err=True)
+            raise typer.Exit(2)
         uvicorn.run(create_app(host), host=host, port=port, log_level="info")
     else:
         raise typer.BadParameter("transport must be stdio or http")
@@ -186,6 +190,54 @@ def pack_validate(path: Path) -> None:
     assert pack is not None
     typer.echo(f"OK {pack.ref}: {len(pack.tariffs)} tariffs, {len(pack.components)} components, "
                f"{len(pack.archetypes)} archetypes")
+
+
+@pack_app.command("build")
+def pack_build(path: Path, out_dir: Path) -> None:
+    """Build a release archive and checksum manifest from a pack directory (maintainers)."""
+    from helionyx.infra.pack_update import build
+
+    try:
+        m = build(path, out_dir)
+    except HelionyxError as exc:
+        _fail(exc)
+    typer.echo(json.dumps(m, indent=2))
+
+
+@pack_app.command("update")
+def pack_update(country: Annotated[str, typer.Option()] = "lk",
+                manifest: Annotated[str | None, typer.Option(help="Manifest URL or path")] = None) -> None:
+    """Download, verify (SHA-256) and install a newer data-pack release into the workspace."""
+    from helionyx.infra.pack_update import update
+    from helionyx.infra.settings import Settings
+
+    try:
+        out = update(Settings().ensure().workspace, country, manifest)
+    except HelionyxError as exc:
+        _fail(exc)
+    typer.echo(json.dumps(out, indent=2))
+
+
+parity_app = typer.Typer(help="HOMER Pro parity study.", no_args_is_help=True)
+app.add_typer(parity_app, name="parity")
+
+
+@parity_app.command("compare")
+def parity_compare(homer_csv: Path, output: Annotated[Path | None, typer.Option()] = None,
+                   cases_dir: Annotated[Path, typer.Option()] = Path("reference_cases")) -> None:
+    """Compare HOMER Pro results (filled template CSV) with Helionyx runs of RC-1..RC-3."""
+    from helionyx.services.parity import compare, to_markdown
+
+    hx = _app()
+    try:
+        md = to_markdown(compare(hx, homer_csv, cases_dir))
+    except HelionyxError as exc:
+        _fail(exc)
+    finally:
+        hx.close()
+    if output:
+        output.write_text(md, encoding="utf-8")
+    typer.echo(md)
 
 
 @eval_app.command("grounding")

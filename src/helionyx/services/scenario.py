@@ -41,6 +41,7 @@ from helionyx.services.resource import get_dataset, get_site
 from helionyx.services.tariff import resolve_tariff, staleness
 
 SYSTEM_DATE = dt.date(2026, 10, 7)
+HEURISTIC_SPACE_LIMIT = 50_000_000
 
 
 def _err(code: ErrorCode, message: str, path: str | None = None, hint: str | None = None) -> Issue:
@@ -454,11 +455,16 @@ class _Resolver:
                                          f"({supply:.1f} kW); every candidate will have unserved load.",
                                          "components", "Add larger sizes or a genset."))
         count = candidate_count(s)
-        if count > s.options.max_candidates:
+        if count > HEURISTIC_SPACE_LIMIT:
             self.errors.append(_err(ErrorCode.SEARCH_SPACE_TOO_LARGE,
-                                    f"The search space has {count} candidates; the limit is "
-                                    f"{s.options.max_candidates}.", "components",
+                                    f"The search space has {count} candidates; even the heuristic solver is "
+                                    f"limited to {HEURISTIC_SPACE_LIMIT}.", "components",
                                     "Reduce the number of sizes per component."))
+        elif count > s.options.max_candidates:
+            self.warnings.append(warning(WarningCode.PLAUSIBILITY,
+                                         f"The search space has {count} candidates, above the enumeration limit "
+                                         f"of {s.options.max_candidates}.", "components",
+                                         "Run with solver='heuristic', or reduce the sizes for full enumeration."))
 
 
 def _jsonable(v: Any) -> Any:
@@ -520,8 +526,7 @@ def create_scenario(app: Helionyx, scenario: ScenarioInput, parent_scenario_id: 
     if big:
         raise HelionyxError(ErrorCode.SEARCH_SPACE_TOO_LARGE, big[0].message,
                             big[0].hint or "Reduce the search space.",
-                            {"candidate_count": candidate_count(resolved),
-                             "limit": resolved.options.max_candidates})
+                            {"candidate_count": candidate_count(resolved), "limit": HEURISTIC_SPACE_LIMIT})
     h = scenario_hash(resolved)
     root_id, version = None, 1
     if parent_scenario_id:

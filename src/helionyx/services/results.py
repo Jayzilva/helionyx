@@ -95,6 +95,7 @@ def get_results(app: Helionyx, run_id: str, top_n: int = 5, sort_by: str | None 
         "run_id": run_id, "scenario_id": run["scenario_id"], "scenario_hash": run["scenario_hash"],
         "currency": run["currency"], "sorted_by": sort_key, "filters": filters,
         "feasible_count": run["feasible_count"], "infeasible_count": run["infeasible_count"],
+        "search": run.get("search"),
         "candidates": [_row(c) | ({"rank_in_view": c["rank_in_view"]} if "rank_in_view" in c else {})
                        for c in cands],
         "base_case": ({"label": base["label"], "sizes": base["sizes"],
@@ -104,6 +105,38 @@ def get_results(app: Helionyx, run_id: str, top_n: int = 5, sort_by: str | None 
         "provenance": provenance(app, run, scn),
         "disclaimer": DISCLAIMER,
     }
+
+
+PARETO_OBJECTIVES = ("npc", "co2_kg_per_yr", "capacity_shortage_pct")
+
+
+def get_pareto(app: Helionyx, run_id: str, max_points: int = 50) -> dict[str, Any]:
+    """Designs on the Pareto front of NPC, annual CO2 and capacity shortage (FR-OPT-006).
+
+    All simulated candidates take part, including those that break a constraint, so the
+    cost-versus-reliability trade-off is visible; each point says whether it is feasible.
+    """
+    from helionyx.core.optimise.pareto import non_dominated
+
+    run = get_run(app, run_id)
+    cands = app.db.get_candidates(run_id, order="index")
+    if run["solver"] not in ("native", "heuristic") or not cands:
+        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, "Pareto sets need a native or heuristic run.",
+                            "Run solver='native' (or 'heuristic') first.")
+    pts = [[c["metrics"][k] for k in PARETO_OBJECTIVES] for c in cands]
+    front = [cands[i] for i in non_dominated(pts)]
+    front.sort(key=lambda c: c["metrics"]["npc"])
+    truncated = len(front) > max_points
+    if truncated:  # keep the extremes and an even spread by NPC
+        idx = np.unique(np.linspace(0, len(front) - 1, max_points).round().astype(int))
+        front = [front[i] for i in idx]
+    scn = get_scenario(app, run["scenario_id"])
+    return {"run_id": run_id, "currency": run["currency"], "objectives": list(PARETO_OBJECTIVES),
+            "front_size": len(front), "truncated": truncated, "candidates_considered": len(cands),
+            "points": [{"candidate_index": c["candidate_index"], "rank": c.get("rank"), "feasible": c["feasible"],
+                        "sizes": c["sizes"], "metrics": {k: c["metrics"].get(k) for k in SUMMARY_METRICS}}
+                       for c in front],
+            "units": _units(run["currency"]), "provenance": provenance(app, run, scn), "disclaimer": DISCLAIMER}
 
 
 def candidate_by_rank(app: Helionyx, run_id: str, rank: int) -> dict[str, Any]:

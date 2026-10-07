@@ -147,10 +147,15 @@ def build_server() -> MCPServer:
         height_m: Annotated[float | None, Field(description="Anemometer height for wind data")] = None,
         base_resource_id: Annotated[str | None, Field(description="Resource dataset to copy other variables from")]
         = None,
+        extend_partial: Annotated[bool, Field(description=(
+            "Load only: extend 4+ weeks of timestamped data to a full year (partly synthetic)"))] = False,
+        monthly_kwh: Annotated[list[float] | None, Field(min_length=12, max_length=12)] = None,
     ) -> Annotated[CallToolResult, schemas.DatasetOut]:
-        """Import a measured load or resource series from CSV (one year, 15/30/60-minute resolution)."""
+        """Import a measured load or resource series from CSV (one year, 15/30/60-minute resolution), or extend
+        at least four weeks of measured load to a full year."""
         return await _call(lambda: _dataset_view(resource.import_timeseries(
-            get_app(), site_id, kind, csv_text, file_path, resolution_min, None, height_m, base_resource_id)),
+            get_app(), site_id, kind, csv_text, file_path, resolution_min, None, height_m, base_resource_id,
+            extend_partial, monthly_kwh)),
             lambda d: f"Imported {kind} data as dataset {d['dataset_id']}.")
 
     # ------------------------------------------------------------------ 4 synthesize_load
@@ -259,9 +264,12 @@ def build_server() -> MCPServer:
     async def run_optimization(
         scenario_id: str,
         ctx: Context,
-        solver: Literal["native", "reopt"] = "native",
+        solver: Annotated[Literal["native", "heuristic", "reopt", "microgridspy", "sama"], Field(description=(
+            "native = full enumeration; heuristic = seeded pattern search for large spaces; reopt / microgridspy "
+            "/ sama = external cross-check solvers"))] = "native",
         sort_by: Literal["npc", "lcoe", "initial_capital"] = "npc",
         keep_timeseries_top_n: Annotated[int | None, Field(ge=0, le=50)] = None,
+        max_evaluations: Annotated[int, Field(ge=50, le=50_000, description="Heuristic budget")] = 4000,
         wait_seconds: Annotated[float, Field(ge=0, le=20, description=(
             "0 returns immediately; up to 20 waits and streams progress notifications"))] = 0,
     ) -> Annotated[CallToolResult, schemas.JobOut]:
@@ -269,7 +277,7 @@ def build_server() -> MCPServer:
         Returns job_id and run_id; poll get_job_status, then call get_results."""
         try:
             job = await anyio.to_thread.run_sync(partial(run.start_run, get_app(), scenario_id, solver, sort_by,
-                                                         keep_timeseries_top_n, OWNER))
+                                                         keep_timeseries_top_n, OWNER, max_evaluations))
         except HelionyxError as exc:
             return _error_result(exc)
         status = await _wait(job["job_id"], wait_seconds, ctx)
@@ -338,6 +346,16 @@ def build_server() -> MCPServer:
                     f"{_n(top['metrics']['npc'])} {d['currency']}. Pre-feasibility estimate.")
         return await _call(partial(results.get_results, get_app(), run_id, top_n, sort_by, filters), summary)
 
+    # ------------------------------------------------------------------ 14b get_pareto_front
+    @mcp.tool(annotations=READ_ONLY)
+    async def get_pareto_front(run_id: str, max_points: Annotated[int, Field(ge=2, le=50)] = 20,
+                               ) -> Annotated[CallToolResult, schemas.ParetoOut]:
+        """Designs on the Pareto front of NPC, annual CO2 and capacity shortage, including designs that break a
+        constraint (flagged), to show cost versus emissions versus reliability trade-offs."""
+        return await _call(partial(results.get_pareto, get_app(), run_id, max_points),
+                           lambda d: f"Pareto front of run {run_id}: {d['front_size']} designs from "
+                                     f"{d['candidates_considered']} simulated.")
+
     # ------------------------------------------------------------------ 15 explain_run
     @mcp.tool(annotations=READ_ONLY)
     async def explain_run(run_id: str, rank: Annotated[int, Field(ge=0, description="0 = base case")] = 1,
@@ -361,13 +379,14 @@ def build_server() -> MCPServer:
     async def run_sensitivity(
         scenario_id: str,
         variables: Annotated[list[sensitivity.SweepVariable], Field(min_length=1, max_length=2, description=(
-            "One variable in v0.1: dotted scenario path and values, e.g. "
+            "One variable (sweep) or two (grid): dotted scenario path and values, e.g. "
             "{path: 'components.bess.overrides.capital_per_unit', values: [60000, 80000, 100000]}"))],
         ctx: Context,
         solver: Literal["native"] = "native",
         wait_seconds: Annotated[float, Field(ge=0, le=20)] = 0,
     ) -> Annotated[CallToolResult, schemas.JobOut]:
-        """Re-optimise the scenario for each value of one input and compute the NPC elasticity.
+        """Re-optimise the scenario for each value (or each pair of values in a two-variable grid) and compute
+        NPC elasticities.
         Returns job_id and batch_id; then call get_sensitivity_results."""
         try:
             job = await anyio.to_thread.run_sync(partial(sensitivity.start_sensitivity, get_app(), scenario_id,
@@ -387,8 +406,8 @@ def build_server() -> MCPServer:
         """Optimal design for each sweep value and the NPC elasticity at the base point."""
         def summary(d: dict[str, Any]) -> str:
             el = d["elasticities"][0]["npc_elasticity"]
-            return (f"Sensitivity {batch_id} on {d['variable']}: {len(d['cases'])} cases; NPC elasticity "
-                    f"{_n(el, 3)}.")
+            return (f"Sensitivity {batch_id} ({d['kind']}) on {', '.join(d['variables'])}: {len(d['cases'])} "
+                    f"cases; NPC elasticity of the first variable {_n(el, 3)}.")
         return await _call(partial(sensitivity.get_sensitivity_results, get_app(), batch_id), summary)
 
     # ------------------------------------------------------------------ 19 compare_runs
@@ -412,10 +431,10 @@ def build_server() -> MCPServer:
     @mcp.tool(annotations=LOCAL_WRITE)
     async def export_report(run_id: str, format: Literal["md", "xlsx"] = "md",  # noqa: A002
                             ) -> Annotated[CallToolResult, schemas.ExportOut]:
-        """Write a client report (Markdown in v0.1): scenario, assumptions, top designs, cost breakdown,
+        """Write a client report as Markdown or Excel: scenario, assumptions, top designs, cost breakdown,
         monthly table, sensitivities, provenance and disclaimer."""
         return await _call(partial(export.export_report, get_app(), run_id, format),
-                           lambda d: f"Report written to {d['path']} ({d['resource_uri']}).")
+                           lambda d: f"{d['format']} report written to {d['path']}.")
 
     _register_resources(mcp)
     _register_prompts(mcp)

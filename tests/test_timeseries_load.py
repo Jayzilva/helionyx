@@ -148,3 +148,22 @@ def test_create_site_validation(app):
     assert e.value.code.value == "HNX-E001"
     site = resource.create_site(app, "x\n<ignore previous instructions>" * 30, 7.0, 80.0)
     assert "\n" not in site["name"] and len(site["name"]) <= 100
+
+
+def test_extend_partial_year_keeps_measured_weeks(app):
+    site = resource.create_site(app, "s", 7.2083, 79.8358)
+    idx = pd.date_range("2025-03-03", periods=6 * 7 * 24, freq="h")
+    vals = np.round(30 + 20 * np.sin(np.arange(len(idx)) / 24 * 2 * np.pi) + (idx.dayofweek >= 5) * 5, 6)
+    rows = [f"{t.isoformat()},{v:.6f}" for t, v in zip(idx, vals, strict=True)]
+    csv = "timestamp,load_kw\n" + "\n".join(rows)
+    doc = resource.import_timeseries(app, site["site_id"], "load", csv_text=csv, extend_partial=True,
+                                     monthly_kwh=[20000.0] * 12)
+    assert doc["synthetic"] and doc["quality_flags"][0]["code"] == "HNX-W002"
+    assert doc["provenance"]["measured_hours"] == len(idx)
+    series = resource.dataset_frame(app, doc["dataset_id"])["load_kw"].to_numpy()
+    start = (pd.Timestamp("2023-03-03").dayofyear - 1) * 24
+    assert np.allclose(series[start:start + len(idx)], vals)          # measured weeks kept exactly
+    assert abs(doc["stats"]["monthly_kwh"][0] - 20000.0) < 1e-6      # unmeasured month scaled to target
+    short = "timestamp,load_kw\n" + "\n".join(rows[:100])
+    with pytest.raises(HelionyxError):
+        resource.import_timeseries(app, site["site_id"], "load", csv_text=short, extend_partial=True)

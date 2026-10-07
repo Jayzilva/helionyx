@@ -16,7 +16,7 @@ EXPECTED_TOOLS = {
     "create_site", "fetch_resource", "import_timeseries", "synthesize_load", "list_tariffs", "get_tariff",
     "compute_bill", "list_components", "create_scenario", "validate_scenario", "run_optimization",
     "get_job_status", "cancel_job", "get_results", "explain_run", "get_monthly_summary", "run_sensitivity",
-    "get_sensitivity_results", "compare_runs", "export_homer_csv", "export_report",
+    "get_sensitivity_results", "compare_runs", "export_homer_csv", "export_report", "get_pareto_front",
 }
 OPEN_WORLD = {"fetch_resource"}
 

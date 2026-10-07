@@ -16,6 +16,7 @@
 |---|---|---|
 | 0.1 | 7 October 2026 | Initial draft. |
 | 0.1.1 | 7 October 2026 | Implementation decisions recorded in [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §2: MCP Python SDK 2.x (`MCPServer`, formerly FastMCP); standard-library `sqlite3` metadata store for the MVP (SQLAlchemy arrives with PostgreSQL in hosted mode); candidates simulated in parallel with Numba `prange` in worker threads instead of a `ProcessPoolExecutor`; optional `wait_seconds` parameter on asynchronous tools to stream progress; `import_timeseries` accepts `base_resource_id`; `create_scenario` accepts `parent_scenario_id` for versioning; self-contained study-file format for `helionyx run`. No requirement changes. |
+| 0.2 | 7 October 2026 | v0.2 implementation (see [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §6). Licence check (Appendix A, V5): MicroGridsPy is EUPL-1.2 and SAMAPy is AGPL-3.0, so FR-ADP-003 now also requires a separately distributed package run as a subprocess; both adapters use the JSON protocol in [`docs/adapters.md`](docs/adapters.md). FR-SCN-002: the `max_candidates` limit applies to enumeration at run time, and larger spaces (up to 50 million) run with `solver: "heuristic"` (FR-OPT-005). New tool `get_pareto_front` (FR-OPT-006). `import_timeseries` gains `extend_partial` and `monthly_kwh` (FR-LOAD-007). `run_optimization` gains `heuristic`, `microgridspy` and `sama` solvers and `max_evaluations`. Interim bearer-key authentication (`HNX_API_KEY`) for HTTP mode before IF-MCP-08. New CLI commands `pack build` and `parity compare`. |
 
 ---
 
@@ -385,6 +386,7 @@ Naming:
 | 19 | `compare_runs` | Compare solvers or scenarios | `run_ids[]` | Side-by-side sizes and metrics with differences | Sync | 0.1 |
 | 20 | `export_homer_csv` | HOMER-importable inputs | `scenario_id` or `run_id` | File paths or resource URIs | Sync | 0.1 |
 | 21 | `export_report` | Client report | `run_id`, `format` (`md` \| `xlsx`) | File path or resource URI | Sync | 0.1 / 0.2 |
+| 23 | `get_pareto_front` | Non-dominated designs | `run_id`, `max_points?` | Designs on the NPC / CO₂ / capacity-shortage front | Sync | 0.2 |
 | 22 | `delete_scenario` | Delete a scenario and its runs and artefacts (hosted mode) | `scenario_id` | Deletion receipt | Sync | 1.0 |
 
 ### 4.3 Tool contract examples
@@ -706,7 +708,7 @@ The Claude skill's behaviour is specified in FR-SKL-001. It is distributed as `s
 |---|---|---|---|---|
 | FR-ADP-001 | All adapters shall implement a common interface: `prepare(scenario)`, `run()` and `normalise()`. `normalise()` returns the common result schema, including the solver name and version. | M | 0.1 | Contract tests. |
 | FR-ADP-002 | The REopt adapter shall map a scenario to REopt v3 inputs as follows. It supplies the custom hourly load, a PV production factor series from the native PV model, and an hourly energy rate series built from the tariff, so that no US-specific datasets are needed. It reads the API key from `HNX_REOPT_API_KEY`, applies a client-side limit of 60 runs per hour and polls until the job completes. Results are labelled "MILP, perfect foresight". | S / M | 0.1 / 0.2 | RC-2 runs end to end against the live API, or against a recorded fixture in CI. |
-| FR-ADP-003 | The MicroGridsPy adapter shall use the HiGHS solver. | M | 0.2 | RC-1 and RC-3 complete. |
+| FR-ADP-003 | The MicroGridsPy adapter shall use the HiGHS solver. Because MicroGridsPy is EUPL-1.2, the adapter shall be a separately distributed package run as a subprocess. | M | 0.2 | RC-1 and RC-3 complete. |
 | FR-ADP-004 | The SAMA adapter shall be a separately distributed GPL-3 package, run as a subprocess with JSON input and output. | M | 0.2 | The core wheel contains no SAMA code (licence scan). |
 | FR-ADP-005 | `compare_runs` shall show sizes and key metrics side by side, with absolute and percentage differences. | M | 0.1 | Covered by AT-11. |
 

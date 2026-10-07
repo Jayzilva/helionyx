@@ -69,11 +69,12 @@ def test_offgrid_without_storage_warns(shared_app, village_ids):
 
 
 def test_search_space_limit(shared_app, hotel_ids):
-    big = hotel_input(hotel_ids, components={"pv": {"sizes_kwp": {"min": 0, "max": 300, "step": 1}},
-                                             "bess": {"sizes_kwh": {"min": 0, "max": 300, "step": 1}}})
+    big = hotel_input(hotel_ids, components={"pv": {"sizes_kwp": {"min": 0, "max": 400, "step": 1}},
+                                             "bess": {"sizes_kwh": {"min": 0, "max": 400, "step": 1}},
+                                             "genset": {"sizes_kw": {"min": 0, "max": 400, "step": 1}}})
     with pytest.raises(HelionyxError) as e:
         create(shared_app, big)
-    assert e.value.code.value == "HNX-E004" and e.value.details["candidate_count"] == 301 * 301
+    assert e.value.code.value == "HNX-E004" and e.value.details["candidate_count"] == 401 ** 3
 
 
 def test_hash_stable_and_yaml_round_trip(shared_app, hotel_ids):
@@ -169,9 +170,13 @@ def test_reports_and_homer_export(shared_app, hotel_ids):
     for section in ("Scenario summary", "Assumptions", "Top designs", "Cost breakdown", "Monthly energy",
                     "Sensitivity", "Provenance", "pre-feasibility"):
         assert section in text
-    with pytest.raises(HelionyxError) as e:
-        export.export_report(shared_app, run_id, "xlsx")
-    assert e.value.code.value == "HNX-E008"
+    xl = export.export_report(shared_app, run_id, "xlsx")
+    from openpyxl import load_workbook
+
+    wb = load_workbook(xl["path"])
+    assert wb.sheetnames == ["Summary", "Assumptions", "Top designs", "Cost breakdown", "Monthly (rank 1)",
+                             "Sensitivity", "Provenance"]
+    assert any("pre-feasibility" in str(c.value) for row in wb["Summary"].iter_rows() for c in row)
     h = export.export_homer_csv(shared_app, run_id=run_id)
     lines = Path(h["files"][0]).read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 8760
@@ -190,8 +195,23 @@ def test_sensitivity_and_elasticity(shared_app, hotel_ids):
     cheap, dear = out["cases"]
     assert cheap["optimal_sizes"]["pv_kwp"] >= dear["optimal_sizes"]["pv_kwp"]
     with pytest.raises(HelionyxError) as e:
-        sensitivity.start_sensitivity(shared_app, doc["scenario_id"], [var, var])
+        sensitivity.start_sensitivity(shared_app, doc["scenario_id"], [var, var, var])
     assert e.value.code.value == "HNX-E008"
+
+
+def test_two_variable_grid(shared_app, hotel_ids):
+    doc = create(shared_app, hotel_input(hotel_ids))
+    pv = sensitivity.SweepVariable(path="components.pv.overrides.capital_per_unit", values=[100000, 300000])
+    gp = sensitivity.SweepVariable(path="economics.grid_price_escalation_real", values=[0.0, 0.05])
+    job = sensitivity.start_sensitivity(shared_app, doc["scenario_id"], [pv, gp])
+    assert job["cases"] == 4
+    assert shared_app.jobs.wait(job["job_id"], 300)["state"] == "completed"
+    out = sensitivity.get_sensitivity_results(shared_app, job["batch_id"])
+    assert out["kind"] == "grid" and len(out["cases"]) == 4 and len(out["elasticities"]) == 2
+    assert all(c["optimal_architecture"] for c in out["cases"])
+    cells = {(c["values"][pv.path], c["values"][gp.path]): c for c in out["cases"]}
+    # cheaper PV never leads to less PV in the optimal design
+    assert cells[(100000, 0.0)]["optimal_sizes"]["pv_kwp"] >= cells[(300000, 0.0)]["optimal_sizes"]["pv_kwp"]
 
 
 def test_compare_runs(shared_app, hotel_ids):

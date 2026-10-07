@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import itertools
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -68,85 +69,131 @@ def _resolve(app: Helionyx, inp: ScenarioInput) -> Any:
     return s
 
 
+def architecture(sizes: dict[str, float] | None) -> str | None:
+    """Short label of the components present in a design, e.g. 'PV+BESS+genset'."""
+    if sizes is None:
+        return None
+    parts = [label for key, label in (("pv_kwp", "PV"), ("wind_count", "wind"), ("bess_kwh", "BESS"),
+                                      ("genset_kw", "genset")) if sizes.get(key, 0) > 0]
+    return "+".join(parts) or "none"
+
+
 def start_sensitivity(app: Helionyx, scenario_id: str, variables: list[SweepVariable], solver: str = "native",
                       owner: str = "local") -> dict[str, Any]:
-    if len(variables) != 1:
+    if not 1 <= len(variables) <= 2:
         raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION,
-                            "v0.1 supports one-variable sweeps; two-variable grids arrive in v0.2.",
-                            "Run one sweep per variable.")
+                            "Sensitivity supports one variable (sweep) or two variables (grid).",
+                            "Split larger studies into several sweeps.")
+    if len({v.path for v in variables}) != len(variables):
+        raise validation("Sensitivity variables must have different paths.", "Remove the duplicate variable.")
     if solver != "native":
-        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, "Sensitivity uses the native solver in v0.1.",
+        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, "Sensitivity uses the native solver.",
                             "Use solver='native'.")
     doc = get_scenario(app, scenario_id)
     if doc["errors"]:
         raise validation("The scenario has validation errors.", "Fix them before running a sensitivity.")
-    var = variables[0]
-    total = doc["candidate_count"] * (len(var.values) + 1)
+    combos = list(itertools.product(*[v.values for v in variables]))
+    total = doc["candidate_count"] * (len(combos) + 1)
     limit = app.settings.max_sensitivity_evaluations
     if total > limit:
         raise HelionyxError(ErrorCode.SEARCH_SPACE_TOO_LARGE,
-                            f"The sweep needs {total} evaluations; the limit is {limit}.",
+                            f"The sensitivity needs {total} evaluations; the limit is {limit}.",
                             "Use fewer values or a smaller search space.", {"evaluations": total, "limit": limit})
     # Validate every case up front so the job does not fail half-way.
-    for v in var.values:
-        _resolve(app, _with_value(doc["input"], var.path, v))
+    for combo in combos:
+        _resolve(app, _with_values(doc["input"], variables, combo))
     batch_id = new_id("sen")
     batch = {"batch_id": batch_id, "scenario_id": scenario_id, "scenario_hash": doc["scenario_hash"],
-             "variables": [var.model_dump()], "status": "queued", "engine": engine_version(),
+             "variables": [v.model_dump() for v in variables], "status": "queued", "engine": engine_version(),
              "created_at": now_iso()}
     app.db.put("batches", batch_id, batch, scenario_id=scenario_id)
 
     def job_fn(progress: Any) -> dict[str, Any]:
-        return _execute(app, batch_id, doc, var, progress)
+        return _execute(app, batch_id, doc, variables, progress)
 
     job = app.jobs.submit("sensitivity", owner, job_fn, {"batch_id": batch_id, "scenario_id": scenario_id})
     batch["job_id"] = job["job_id"]
     app.db.put("batches", batch_id, batch, scenario_id=scenario_id)
-    return {"job_id": job["job_id"], "batch_id": batch_id, "state": job["state"], "cases": len(var.values),
+    return {"job_id": job["job_id"], "batch_id": batch_id, "state": job["state"], "cases": len(combos),
             "evaluations": total}
 
 
-def _execute(app: Helionyx, batch_id: str, doc: dict[str, Any], var: SweepVariable, progress: Any) -> dict[str, Any]:
+def _with_values(base_input: dict[str, Any], variables: list[SweepVariable], combo: tuple[float, ...]
+                 ) -> ScenarioInput:
+    data = copy.deepcopy(base_input)
+    for var, value in zip(variables, combo, strict=True):
+        _set_path(data, var.path, value)
+    try:
+        return ScenarioInput.model_validate(data)
+    except ValidationError as exc:
+        e = exc.errors()[0]
+        raise validation(f"Values {list(combo)} are not valid: {e['msg']} at {'.'.join(map(str, e['loc']))}",
+                         "Check the paths and the value ranges.") from exc
+
+
+def _elasticity(app: Helionyx, doc: dict[str, Any], var: SweepVariable, base_best: dict[str, Any] | None
+                ) -> tuple[float | None, float | None]:
+    base_val = _base_value(doc["assumptions"], var.path)
+    if base_best is None or base_val in (None, 0.0):
+        return base_val, None
+    assert base_val is not None
+    npcs = []
+    sz = base_best["sizes"]
+    for f in (1 - ELASTICITY_STEP, 1 + ELASTICITY_STEP):
+        s = _resolve(app, _with_value(doc["input"], var.path, base_val * f))
+        rec = evaluate_sizes(app, s, [(sz["pv_kwp"], sz["wind_count"], sz["bess_kwh"], sz["genset_kw"])])[0]
+        npcs.append(rec["metrics"]["npc"])
+    npc0 = base_best["metrics"]["npc"]
+    return base_val, (((npcs[1] - npcs[0]) / npc0) / (2 * ELASTICITY_STEP) if npc0 else None)
+
+
+def _execute(app: Helionyx, batch_id: str, doc: dict[str, Any], variables: list[SweepVariable],
+             progress: Any) -> dict[str, Any]:
     base_s = resolved_of(doc)
-    n = len(var.values) + 1
+    combos = list(itertools.product(*[v.values for v in variables]))
+    n = len(combos) + 1
     progress(1.0, "base case")
     base_cands, _ = optimise(app, base_s, "npc")
     base_best = next((c for c in base_cands if c["rank"] == 1), None)
     cases = []
-    for k, value in enumerate(var.values):
-        s = _resolve(app, _with_value(doc["input"], var.path, value))
+    for k, combo in enumerate(combos):
+        s = _resolve(app, _with_values(doc["input"], variables, combo))
         cands, _ = optimise(app, s, "npc")
         best = next((c for c in cands if c["rank"] == 1), None)
-        cases.append({
-            "value": value, "candidate_count": candidate_count(s),
+        case: dict[str, Any] = {
+            "values": {v.path: x for v, x in zip(variables, combo, strict=True)},
+            "candidate_count": candidate_count(s),
             "feasible_count": sum(1 for c in cands if c["feasible"]),
+            "optimal_architecture": architecture(best["sizes"] if best else None),
             "optimal_sizes": best["sizes"] if best else None,
             "optimal_metrics": {m: best["metrics"].get(m) for m in ("npc", "lcoe_per_kwh", "initial_capital",
                                                                    "renewable_fraction_pct", "annual_bill",
                                                                    "fuel_l_per_yr", "simple_payback_yr")}
             if best else None,
-        })
-        progress(100.0 * (k + 2) / (n + 1), f"case {k + 1}/{len(var.values)}")
-    base_val = _base_value(doc["assumptions"], var.path)
-    elasticity = None
-    if base_best is not None and base_val not in (None, 0.0):
-        assert base_val is not None
-        npcs = []
-        for f in (1 - ELASTICITY_STEP, 1 + ELASTICITY_STEP):
-            s = _resolve(app, _with_value(doc["input"], var.path, base_val * f))
-            sz = base_best["sizes"]
-            rec = evaluate_sizes(app, s, [(sz["pv_kwp"], sz["wind_count"], sz["bess_kwh"], sz["genset_kw"])])[0]
-            npcs.append(rec["metrics"]["npc"])
-        npc0 = base_best["metrics"]["npc"]
-        elasticity = ((npcs[1] - npcs[0]) / npc0) / (2 * ELASTICITY_STEP) if npc0 else None
-    result = {
-        "batch_id": batch_id, "scenario_id": doc["scenario_id"], "variable": var.path,
-        "base_value": base_val,
+        }
+        if len(variables) == 1:
+            case["value"] = combo[0]
+        cases.append(case)
+        progress(100.0 * (k + 2) / (n + 1), f"case {k + 1}/{len(combos)}")
+    elasticities = []
+    base_values = {}
+    for var in variables:
+        base_val, el = _elasticity(app, doc, var, base_best)
+        base_values[var.path] = base_val
+        elasticities.append({"path": var.path, "npc_elasticity": el,
+                             "method": f"central difference ±{ELASTICITY_STEP:.0%} on the base optimal design"})
+    result: dict[str, Any] = {
+        "batch_id": batch_id, "scenario_id": doc["scenario_id"],
+        "kind": "sweep" if len(variables) == 1 else "grid",
+        "variable": variables[0].path if len(variables) == 1 else None,
+        "variables": [v.path for v in variables],
+        "base_value": base_values[variables[0].path] if len(variables) == 1 else None,
+        "base_values": base_values,
         "base_optimal_sizes": base_best["sizes"] if base_best else None,
+        "base_optimal_architecture": architecture(base_best["sizes"] if base_best else None),
         "base_optimal_npc": base_best["metrics"]["npc"] if base_best else None,
         "cases": cases,
-        "elasticities": [{"path": var.path, "npc_elasticity": elasticity, "method":
-                          f"central difference ±{ELASTICITY_STEP:.0%} on the base optimal design"}],
+        "elasticities": elasticities,
     }
     batch = app.db.get("batches", batch_id, "sensitivity batch")
     batch.update(status="completed", result=result, finished_at=now_iso())

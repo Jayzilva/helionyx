@@ -109,6 +109,14 @@ class ResultsOut(Out):
     disclaimer: str
 
 
+class ParetoOut(Out):
+    run_id: str
+    objectives: list[str]
+    front_size: int
+    points: list[dict[str, Any]]
+    disclaimer: str
+
+
 class ExplainOut(Out):
     run_id: str
     rank: int

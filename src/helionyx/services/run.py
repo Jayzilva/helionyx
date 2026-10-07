@@ -20,17 +20,28 @@ from helionyx.core.engine.pv import pv_ac_per_kwp
 from helionyx.core.engine.timeaxis import HOURS, MONTH
 from helionyx.core.engine.wind import turbine_output
 from helionyx.core.models.scenario import ResolvedScenario
+from helionyx.core.optimise.heuristic import pattern_search
 from helionyx.errors import ErrorCode, HelionyxError, validation
 from helionyx.infra.db import now_iso
 from helionyx.infra.ids import new_id
 from helionyx.infra.packs import get_pack
 from helionyx.services.context import Helionyx, engine_version
 from helionyx.services.resource import dataset_frame
-from helionyx.services.scenario import enumerate_candidates, get_scenario, lock_scenario, resolved_of, scenario_hash
+from helionyx.services.scenario import (
+    candidate_count,
+    enumerate_candidates,
+    get_scenario,
+    lock_scenario,
+    resolved_of,
+    scenario_hash,
+    size_axes,
+)
 from helionyx.services.tariff import tariff_period_index
 
 SORT_KEYS = {"npc": "npc", "lcoe": "lcoe", "initial_capital": "initial_capital"}
 SIZE_KEYS = ("pv_kwp", "wind_count", "bess_kwh", "genset_kw")
+SOLVERS = ("native", "heuristic", "reopt", "microgridspy", "sama")
+DEFAULT_HEURISTIC_EVALUATIONS = 4000
 
 _INPUT_CACHE: OrderedDict[str, dsp.SystemInputs] = OrderedDict()
 _CACHE_LOCK = threading.Lock()
@@ -320,22 +331,65 @@ def attach_payback(cands: list[dict[str, Any]], base: dict[str, Any] | None, i: 
                             irr_pct=pb.irr_pct)
 
 
+def _base_case(app: Helionyx, s: ResolvedScenario) -> dict[str, Any] | None:
+    inp = build_inputs(app, s)
+    bc = base_case_sizes(s, float(inp.load.max()))
+    if bc is None:
+        return None
+    label, bsz = bc
+    base = evaluate_sizes(app, s, [bsz], base_index=-1)[0]
+    base["label"] = label
+    base["feasible"] = True
+    base["metrics"].update(simple_payback_yr=None, discounted_payback_yr=None, irr_pct=None)
+    return base
+
+
 def optimise(app: Helionyx, s: ResolvedScenario, sort_by: str, progress: Any = None
              ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    """Enumerate every candidate (FR-OPT-001)."""
     sizes = enumerate_candidates(s)
     cands = evaluate_sizes(app, s, sizes, progress, 0, 2.0, 90.0)
-    inp = build_inputs(app, s)
-    base = None
-    bc = base_case_sizes(s, float(inp.load.max()))
-    if bc is not None:
-        label, bsz = bc
-        base = evaluate_sizes(app, s, [bsz], base_index=-1)[0]
-        base["label"] = label
-        base["feasible"] = True
-        base["metrics"].update(simple_payback_yr=None, discounted_payback_yr=None, irr_pct=None)
+    base = _base_case(app, s)
     attach_payback(cands, base, s.economics.real_discount_rate)
     rank(cands, sort_by)
     return cands, base
+
+
+def optimise_heuristic(app: Helionyx, s: ResolvedScenario, sort_by: str, progress: Any = None,
+                       max_evaluations: int = DEFAULT_HEURISTIC_EVALUATIONS,
+                       ) -> tuple[list[dict[str, Any]], dict[str, Any] | None, dict[str, Any]]:
+    """Seeded pattern search for spaces too large to enumerate (FR-OPT-005)."""
+    axes = list(size_axes(s).values())
+    lengths = [len(a) for a in axes]
+    records: dict[tuple[int, ...], dict[str, Any]] = {}
+
+    def flat_index(idx: tuple[int, ...]) -> int:
+        k = 0
+        for i, n in zip(idx, lengths, strict=True):
+            k = k * n + i
+        return k
+
+    def evaluate(points: list[tuple[int, ...]]) -> list[tuple[float, float]]:
+        out = []
+        sizes = [tuple(axes[d][i] for d, i in enumerate(idx)) for idx in points]
+        for idx, rec in zip(points, evaluate_sizes(app, s, sizes), strict=True):  # type: ignore[arg-type]
+            rec["candidate_index"] = flat_index(idx)
+            records[idx] = rec
+            out.append((sum(v["normalised_violation"] for v in rec["violations"]), _sort_value(rec, sort_by)))
+        if progress is not None:
+            progress(min(90.0, 2.0 + 88.0 * len(records) / max_evaluations), f"evaluated {len(records)}")
+        return out
+
+    res = pattern_search(lengths, evaluate, s.seed, max_evaluations=max_evaluations)
+    cands = sorted(records.values(), key=lambda c: c["candidate_index"])
+    base = _base_case(app, s)
+    attach_payback(cands, base, s.economics.real_discount_rate)
+    rank(cands, sort_by)
+    info = {"method": "heuristic pattern search", "evaluations": res.evaluations, "starts": res.starts,
+            "iterations": res.iterations, "budget": max_evaluations, "budget_exhausted": res.budget_exhausted,
+            "search_space": candidate_count(s), "seed": s.seed,
+            "note": "Heuristic result: the global optimum of the full search space is not guaranteed."}
+    return cands, base, info
 
 
 # --------------------------------------------------------------------------- run lifecycle
@@ -351,11 +405,16 @@ def _persist_series(app: Helionyx, s: ResolvedScenario, cand: dict[str, Any]) ->
 
 
 def execute_run(app: Helionyx, run_id: str, scenario_doc: dict[str, Any], sort_by: str, keep_top_n: int,
-                progress: Any) -> dict[str, Any]:
+                progress: Any, solver: str = "native", max_evaluations: int = DEFAULT_HEURISTIC_EVALUATIONS,
+                ) -> dict[str, Any]:
     t0 = time.perf_counter()
     s = resolved_of(scenario_doc)
     progress(1.0, "preparing inputs")
-    cands, base = optimise(app, s, sort_by, progress)
+    search: dict[str, Any] = {"method": "enumeration", "evaluations": candidate_count(s)}
+    if solver == "heuristic":
+        cands, base, search = optimise_heuristic(app, s, sort_by, progress, max_evaluations)
+    else:
+        cands, base = optimise(app, s, sort_by, progress)
     progress(92.0, "persisting results")
     top = sorted((c for c in cands if c["rank"] is not None), key=lambda c: c["rank"])[:keep_top_n]
     for c in top:
@@ -366,7 +425,7 @@ def execute_run(app: Helionyx, run_id: str, scenario_doc: dict[str, Any], sort_b
     app.db.put_candidates(run_id, rows)
     feasible = sum(1 for c in cands if c["feasible"])
     run = app.db.get("runs", run_id, "run")
-    run.update(status="completed", feasible_count=feasible, infeasible_count=len(cands) - feasible,
+    run.update(status="completed", feasible_count=feasible, infeasible_count=len(cands) - feasible, search=search,
                base_case={k: v for k, v in base.items() if k != "cash_flows"} if base else None,
                wall_time_s=round(time.perf_counter() - t0, 3), finished_at=now_iso(),
                max_energy_balance_error_kwh=max((c["metrics"]["max_energy_balance_error_kwh"] for c in cands),
@@ -376,7 +435,8 @@ def execute_run(app: Helionyx, run_id: str, scenario_doc: dict[str, Any], sort_b
 
 
 def start_run(app: Helionyx, scenario_id: str, solver: str = "native", sort_by: str = "npc",
-              keep_timeseries_top_n: int | None = None, owner: str = "local") -> dict[str, Any]:
+              keep_timeseries_top_n: int | None = None, owner: str = "local",
+              max_evaluations: int = DEFAULT_HEURISTIC_EVALUATIONS) -> dict[str, Any]:
     doc = get_scenario(app, scenario_id)
     if doc["errors"]:
         raise validation("The scenario has validation errors and cannot run.",
@@ -384,10 +444,16 @@ def start_run(app: Helionyx, scenario_id: str, solver: str = "native", sort_by: 
                          errors=doc["errors"][:5])
     if sort_by not in SORT_KEYS:
         raise validation(f"Unknown sort_by '{sort_by[:30]}'.", "Use npc, lcoe or initial_capital.")
-    if solver not in ("native", "reopt"):
-        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, f"Solver '{solver[:30]}' is not available in v0.1.",
-                            "Use solver='native' (or 'reopt' with HNX_REOPT_API_KEY set).")
+    if solver not in SOLVERS:
+        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, f"Solver '{solver[:30]}' is not available.",
+                            f"Use one of: {', '.join(SOLVERS)}.")
     s = resolved_of(doc)
+    if solver == "native" and doc["candidate_count"] > s.options.max_candidates:
+        raise HelionyxError(ErrorCode.SEARCH_SPACE_TOO_LARGE,
+                            f"The search space has {doc['candidate_count']} candidates; enumeration is limited to "
+                            f"{s.options.max_candidates}.",
+                            "Use solver='heuristic', or reduce the number of sizes per component.",
+                            {"candidate_count": doc["candidate_count"], "limit": s.options.max_candidates})
     keep = keep_timeseries_top_n if keep_timeseries_top_n is not None else s.options.keep_timeseries_top_n
     run_id = new_id("run")
     lock_scenario(app, doc)
@@ -402,9 +468,17 @@ def start_run(app: Helionyx, scenario_id: str, solver: str = "native", sort_by: 
 
         def job_fn(progress: Any) -> dict[str, Any]:
             return adapter.execute(run_id, doc, progress)
+    elif solver in ("microgridspy", "sama"):
+        from helionyx.adapters.subprocess_adapter import SubprocessAdapter
+
+        sub_adapter = SubprocessAdapter(app, solver)
+        sub_adapter.command()  # fail fast with an install hint if the package is missing
+
+        def job_fn(progress: Any) -> dict[str, Any]:
+            return sub_adapter.execute(run_id, doc, progress)
     else:
         def job_fn(progress: Any) -> dict[str, Any]:
-            return execute_run(app, run_id, doc, sort_by, keep, progress)
+            return execute_run(app, run_id, doc, sort_by, keep, progress, solver, max_evaluations)
 
     job = app.jobs.submit("optimization", owner, job_fn, {"run_id": run_id, "scenario_id": scenario_id})
     run["job_id"] = job["job_id"]

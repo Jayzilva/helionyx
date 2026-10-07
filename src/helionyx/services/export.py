@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,7 @@ import pandas as pd
 
 from helionyx import DISCLAIMER
 from helionyx.core.engine import dispatch as dsp
-from helionyx.errors import ErrorCode, HelionyxError, validation
+from helionyx.errors import validation
 from helionyx.infra.db import now_iso
 from helionyx.services.context import Helionyx
 from helionyx.services.results import explain_run, get_monthly_summary, get_results
@@ -83,8 +84,9 @@ def export_homer_csv(app: Helionyx, scenario_id: str | None = None, run_id: str 
             "anemometer_height_m": wind_height, "annual_totals": totals,
             "notes": ["Each series file has 8,760 rows starting 1 January 00:00 local time.",
                       "Import the series in HOMER Pro and enter the values from homer_parameters.md by hand.",
-                      "HOMER import of these files has not yet been verified against the current HOMER version "
-                      "(SRS Appendix A, V6)."]}
+                      "Format follows the HOMER Pro manual (one value per line; 8,760 rows from midnight 1 January; "
+                      "GHI as average kW/m² per step). An import test in HOMER Pro itself is part of the v0.2 "
+                      "parity study."]}
 
 
 def export_timeseries(app: Helionyx, run_id: str, rank: int = 1, fmt: str = "csv") -> dict[str, Any]:
@@ -104,35 +106,138 @@ def export_timeseries(app: Helionyx, run_id: str, rank: int = 1, fmt: str = "csv
     return {"run_id": run_id, "rank": rank, "path": str(path), "rows": len(df), "columns": list(df.columns)}
 
 
-def render_report(app: Helionyx, run_id: str) -> str:
-    run = get_run(app, run_id)
-    scn = get_scenario(app, run["scenario_id"])
-    results = get_results(app, run_id, top_n=5)
-    explanation = explain_run(app, run_id, rank=1, compare_to="base" if run.get("base_case") else "next")
-    monthly = get_monthly_summary(app, run_id, rank=1)
-    batches = [app.db.get("batches", r["id"], "batch") for r in
-               app.db.query("SELECT id FROM batches WHERE scenario_id = ? ORDER BY created_at", (run["scenario_id"],))]
-    sensitivities = [b["result"] for b in batches if b.get("status") == "completed"]
+def report_data(app: Helionyx, run_id: str) -> dict[str, Any]:
+    """Everything a report contains (FR-RPT-006), shared by the Markdown and Excel renderers."""
     from helionyx.services.results import _uncertainties
 
-    methodology_notes = (TEMPLATES / "differences_from_homer.md").read_text(encoding="utf-8")
-    return _env.get_template("report.md.j2").render(
-        run=run, scn=scn, s=scn["resolved"], results=results, ex=explanation, monthly=monthly,
-        sensitivities=sensitivities, uncertainties=_uncertainties(app, scn), generated_at=now_iso(),
-        disclaimer=DISCLAIMER, homer_differences=methodology_notes)
+    run = get_run(app, run_id)
+    scn = get_scenario(app, run["scenario_id"])
+    batches = [app.db.get("batches", r["id"], "batch") for r in
+               app.db.query("SELECT id FROM batches WHERE scenario_id = ? ORDER BY created_at", (run["scenario_id"],))]
+    return {
+        "run": run, "scn": scn, "s": scn["resolved"],
+        "results": get_results(app, run_id, top_n=5),
+        "ex": explain_run(app, run_id, rank=1, compare_to="base" if run.get("base_case") else "next"),
+        "monthly": get_monthly_summary(app, run_id, rank=1),
+        "sensitivities": [b["result"] for b in batches if b.get("status") == "completed"],
+        "uncertainties": _uncertainties(app, scn),
+        "generated_at": now_iso(), "disclaimer": DISCLAIMER,
+        "homer_differences": (TEMPLATES / "differences_from_homer.md").read_text(encoding="utf-8"),
+    }
+
+
+def render_report(app: Helionyx, run_id: str) -> str:
+    return _env.get_template("report.md.j2").render(**report_data(app, run_id))
+
+
+def _cell(v: Any) -> Any:
+    if v is None or isinstance(v, int | float | str):
+        return v
+    return json.dumps(v, default=str)
+
+
+def write_xlsx(data: dict[str, Any], path: Path) -> None:
+    """Excel report with one sheet per report section (FR-RPT-006, v0.2)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+
+    run, scn, s, res, ex, monthly = (data[k] for k in ("run", "scn", "s", "results", "ex", "monthly"))
+    cur = run["currency"]
+    wb = Workbook()
+    bold = Font(bold=True)
+    first = [True]
+
+    def sheet(title: str, header: list[str], rows: list[list[Any]]) -> None:
+        ws = wb.active if first[0] else wb.create_sheet()
+        first[0] = False
+        assert ws is not None
+        ws.title = title
+        ws.append(header)
+        for cell in ws[1]:
+            cell.font = bold
+        for r in rows:
+            ws.append([_cell(v) for v in r])
+        for k, h in enumerate(header, start=1):
+            width = max([len(str(h))] + [len(str(r[k - 1])) for r in rows if k - 1 < len(r)])
+            ws.column_dimensions[get_column_letter(k)].width = min(60, max(10, width + 2))
+        ws.freeze_panes = "A2"
+
+    grid = s["grid"]
+    tariff_txt = f", tariff {grid['tariff']['id']}, {grid['export_scheme']}" if grid["tariff"] else ""
+    site = s["site"]
+    sheet("Summary", ["Item", "Value"], [
+        ["Report", f"Helionyx pre-feasibility report: {s['name']}"],
+        ["Run", run["run_id"]], ["Scenario", f"{run['scenario_id']} (version {scn['version']})"],
+        ["Scenario hash", run["scenario_hash"]], ["Engine", run["engine"]],
+        ["Data packs", ", ".join(f"{k}@{v}" for k, v in run["packs"].items())],
+        ["Generated", data["generated_at"]],
+        ["Site", f"{site['name']} ({site['latitude']}, {site['longitude']}), {site['timezone']}"],
+        ["Grid", grid["mode"] + tariff_txt], ["Grid availability", grid["availability"]["type"]],
+        ["Dispatch", s["dispatch"]["strategy"]],
+        ["Project life (years)", s["economics"]["project_life_years"]],
+        ["Real discount rate", s["economics"]["real_discount_rate"]],
+        ["Candidates", run["feasible_count"] + run["infeasible_count"]], ["Feasible", run["feasible_count"]],
+        ["Currency", cur], ["Disclaimer", data["disclaimer"]],
+    ])
+    sheet("Assumptions", ["Field", "Value", "Origin", "Source", "Date"],
+          [[a["path"], a["value"], a["origin"], a.get("source"), a.get("date")] for a in scn["assumptions"]]
+          + [[f"warning {w['code']}", w["message"], "", "", ""] for w in scn["warnings"]])
+    size_keys = ("pv_kwp", "wind_count", "bess_kwh", "bess_kw", "genset_kw")
+    cols = ["npc", "lcoe_per_kwh", "initial_capital", "operating_cost_per_yr", "renewable_fraction_pct",
+            "capacity_shortage_pct", "annual_bill", "simple_payback_yr", "irr_pct", "fuel_l_per_yr", "co2_kg_per_yr"]
+    rows = [[c["rank"], *[c["sizes"][k] for k in size_keys], *[c["metrics"].get(k) for k in cols]]
+            for c in res["candidates"]]
+    if res["base_case"]:
+        b = res["base_case"]
+        rows.append([f"base: {b['label']}", *[b["sizes"][k] for k in size_keys], *[b["metrics"].get(k) for k in cols]])
+    money = {"npc", "initial_capital", "operating_cost_per_yr", "annual_bill"}
+    sheet("Top designs", ["Rank", "PV kWp", "Wind turbines", "BESS kWh", "BESS kW", "Genset kW",
+                          *[f"{k} ({cur})" if k in money else k for k in cols]], rows)
+    sheet("Cost breakdown", ["Scope", "Item", f"Present value ({cur})", "Share of gross cost (%)"],
+          [["cost type", k, v["value"], v["share_pct"]] for k, v in ex["npc_by_cost_type"].items()]
+          + [["component", k, v, None] for k, v in ex["npc_by_component"].items()]
+          + [["total", "NPC", ex["npc"], None]])
+    mkeys = [k for k in monthly["months"][0] if k != "month"]
+    sheet("Monthly (rank 1)", ["Month", *mkeys],
+          [[m["month"], *[m[k] for k in mkeys]] for m in monthly["months"]]
+          + [["Total", *[monthly["annual_totals"][k] for k in mkeys]]])
+    sens_rows: list[list[Any]] = []
+    for b in data["sensitivities"]:
+        for c in b["cases"]:
+            vals = c.get("values") or {b.get("variable"): c.get("value")}
+            sz, mt = c.get("optimal_sizes") or {}, c.get("optimal_metrics") or {}
+            sens_rows.append([b["batch_id"], vals, c.get("optimal_architecture"), sz.get("pv_kwp"),
+                              sz.get("bess_kwh"), sz.get("genset_kw"), mt.get("npc"), mt.get("lcoe_per_kwh")])
+        for e in b["elasticities"]:
+            sens_rows.append([b["batch_id"], f"NPC elasticity to {e['path']}", None, None, None, None,
+                              e["npc_elasticity"], None])
+    sheet("Sensitivity", ["Batch", "Values", "Architecture", "PV kWp", "BESS kWh", "Genset kW", f"NPC ({cur})",
+                          "LCOE"], sens_rows or [["none", "No sensitivity analysis run", None, None, None, None,
+                                                  None, None]])
+    prov = res["provenance"]
+    sheet("Provenance", ["Item", "Value"],
+          [["Engine", prov["engine"]], ["Solver", prov["solver"]], ["Seed", prov["seed"]],
+           ["Sources", ", ".join(prov["sources"])], ["Wall time (s)", prov.get("wall_time_s")],
+           ["Uncertain inputs", "; ".join(f"{u['input']}: {u['reason']}" for u in data["uncertainties"])],
+           ["Differences from HOMER", data["homer_differences"]], ["Disclaimer", data["disclaimer"]]])
+    wb.save(path)
 
 
 def export_report(app: Helionyx, run_id: str, fmt: str = "md") -> dict[str, Any]:
-    if fmt == "xlsx":
-        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, "Excel reports arrive in v0.2.",
-                            "Use format='md'; the Markdown report contains every section.")
-    if fmt != "md":
-        raise validation("format must be 'md'.", "Use format='md'.")
-    text = render_report(app, run_id)
-    path = _out_dir(app, run_id) / "report.md"
-    path.write_text(text, encoding="utf-8")
-    return {"run_id": run_id, "format": "md", "path": str(path), "resource_uri": f"hnx://runs/{run_id}/report.md",
-            "bytes": len(text.encode("utf-8"))}
+    if fmt not in ("md", "xlsx"):
+        raise validation("format must be 'md' or 'xlsx'.", "Use md or xlsx.")
+    out = _out_dir(app, run_id)
+    if fmt == "md":
+        text = render_report(app, run_id)
+        path = out / "report.md"
+        path.write_text(text, encoding="utf-8")
+        return {"run_id": run_id, "format": "md", "path": str(path),
+                "resource_uri": f"hnx://runs/{run_id}/report.md", "bytes": len(text.encode("utf-8"))}
+    path = out / "report.xlsx"
+    write_xlsx(report_data(app, run_id), path)
+    return {"run_id": run_id, "format": "xlsx", "path": str(path), "resource_uri": None,
+            "bytes": path.stat().st_size}
 
 
 def export_scenario_yaml(app: Helionyx, scenario_id: str) -> str:

@@ -42,22 +42,29 @@ from).** Helionyx results are pre-feasibility estimates, never final designs.
 3. Load: `synthesize_load` with archetypes (`hotel`, `office`, `small_industry_1shift`,
    `small_industry_3shift`, `urban_household`, `rural_household`, `health_clinic`, `school`,
    `telecom_tower`, `cold_storage`, `estate_office`) and `monthly_kwh` from bills when available;
-   or `import_timeseries` (kind `load`) for measured data.
+   or `import_timeseries` (kind `load`) for measured data. For 4 weeks or more of measured data
+   that is shorter than a year, use `extend_partial: true` (optionally with `monthly_kwh`); the
+   result is labelled partly synthetic.
 4. `list_tariffs` / `get_tariff` to pick the tariff; `compute_bill` with the `load_id` for the
    baseline bill.
 5. `create_scenario` with size lists or ranges (`{min, max, step}`), the tariff and export
    scheme, and constraints (e.g. `roof_area_m2`, `max_capacity_shortage`). Keep the search space
-   modest (hundreds to a few thousand candidates); the tool rejects more than 50,000.
+   modest (hundreds to a few thousand candidates). Above 50,000 candidates, full enumeration is
+   refused; use `solver: "heuristic"` and tell the user the result is a heuristic search, quoting
+   the number of evaluations from `get_results.search`.
 6. `validate_scenario` → show assumptions and warnings → user confirms.
 7. `run_optimization` (optionally `wait_seconds: 15`), then `get_job_status` until `completed`.
 8. `get_results` (top 5) and `explain_run` (rank 1, `compare_to: "base"`).
 9. Present the top three designs: sizes, NPC, LCOE, initial capital, simple payback, and
    annual bill before (base case) and after — all from the tool outputs, with the run ID. Use
    `get_monthly_summary` for the monthly bill table.
-10. Offer: sensitivity (`run_sensitivity` → `get_sensitivity_results`), a report
-    (`export_report`, Markdown), HOMER export (`export_homer_csv`), or a REopt cross-check
-    (`run_optimization` with `solver: "reopt"`, then `compare_runs`; warn that the load is sent
-    to the REopt API).
+10. Offer: sensitivity (`run_sensitivity` with one variable, or two for a grid that shows which
+    architecture wins in each cell → `get_sensitivity_results`), a report (`export_report`,
+    `md` or `xlsx`), the cost–emissions–reliability trade-off (`get_pareto_front`), HOMER export
+    (`export_homer_csv`), or a cross-check with another solver (`run_optimization` with
+    `solver: "reopt"`, `"microgridspy"` or `"sama"`, then `compare_runs`). Warn that `reopt`
+    sends the load to the REopt API. Explain differences between solvers from their documented
+    method differences, not from your own estimates.
 
 ## Off-grid and diesel hybrids
 

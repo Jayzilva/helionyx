@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "helionyx-sama"
+version = "0.2.0.dev0"
+description = "SAMA cross-check adapter for Helionyx (separate package: SAMAPy is AGPL-3.0)"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.10"
+dependencies = ["samapy>=1.0.6,<1.1", "numpy>=1.26", "matplotlib"]
+
+[project.scripts]
+helionyx-sama = "helionyx_sama.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/helionyx_sama"]

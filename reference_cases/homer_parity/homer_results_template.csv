@@ -1,0 +1,4 @@
+case,pv_kwp,wind_count,bess_kwh,genset_kw,npc,lcoe_per_kwh,renewable_fraction_pct,fuel_l_per_yr,excess_electricity_pct,capacity_shortage_pct,homer_version,notes
+RC-1,,,,,,,,,,,,
+RC-2,,,,,,,,,,,,
+RC-3,,,,,,,,,,,,

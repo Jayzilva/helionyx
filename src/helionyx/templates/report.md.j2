@@ -95,17 +95,19 @@ Top cost drivers: {% for d in ex.top_cost_drivers %}{{ d.item }} ({{ d.share_pct
 
 {% if sensitivities %}
 {% for b in sensitivities %}
-### `{{ b.variable }}` (batch `{{ b.batch_id }}`)
+### {{ b.variables | join(" × ") }} (batch `{{ b.batch_id }}`)
 
-NPC elasticity at the base point: {{ b.elasticities[0].npc_elasticity|n2 }} ({{ b.elasticities[0].method }}).
+{% for e in b.elasticities %}
+- NPC elasticity to `{{ e.path }}` at the base point: {{ e.npc_elasticity|n2 }} ({{ e.method }}).
+{% endfor %}
 
-| Value | PV (kWp) | Battery (kWh) | Genset (kW) | NPC | LCOE |
-|---|---|---|---|---|---|
+| {% for v in b.variables %}{{ v }} | {% endfor %}Architecture | PV (kWp) | Battery (kWh) | Genset (kW) | NPC | LCOE |
+|{% for v in b.variables %}---|{% endfor %}---|---|---|---|---|---|
 {% for c in b.cases %}
 {% if c.optimal_sizes %}
-| {{ c.value }} | {{ c.optimal_sizes.pv_kwp|n1 }} | {{ c.optimal_sizes.bess_kwh|n0 }} | {{ c.optimal_sizes.genset_kw|n0 }} | {{ c.optimal_metrics.npc|n0 }} | {{ c.optimal_metrics.lcoe_per_kwh|n2 }} |
+| {% for v in b.variables %}{{ c["values"][v] }} | {% endfor %}{{ c.optimal_architecture }} | {{ c.optimal_sizes.pv_kwp|n1 }} | {{ c.optimal_sizes.bess_kwh|n0 }} | {{ c.optimal_sizes.genset_kw|n0 }} | {{ c.optimal_metrics.npc|n0 }} | {{ c.optimal_metrics.lcoe_per_kwh|n2 }} |
 {% else %}
-| {{ c.value }} | no feasible design | | | | |
+| {% for v in b.variables %}{{ c["values"][v] }} | {% endfor %}no feasible design | | | | | |
 {% endif %}
 {% endfor %}
 {% endfor %}

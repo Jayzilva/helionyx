@@ -265,11 +265,61 @@ def _hourly_values(df: pd.DataFrame, col: str, resolution_min: int, is_power: bo
     return to_hourly_mean(values, resolution_min) if is_power or per_hour > 1 else values
 
 
+def _extend_partial_load(site: dict[str, Any], df: pd.DataFrame, resolution_min: int,
+                         monthly_kwh: list[float] | None) -> tuple[np.ndarray, dict[str, Any], list[dict[str, Any]]]:
+    """Measured load shorter than one year (at least 4 weeks), extended by day type and month (FR-LOAD-007)."""
+    from helionyx.core.load import extend_partial_year
+
+    if "timestamp" not in df.columns:
+        raise validation("Extending a partial year needs a timestamp column.",
+                         "Add ISO 8601 local timestamps to the CSV.")
+    idx = pd.DatetimeIndex(pd.to_datetime(df["timestamp"]))
+    if idx.tz is not None:
+        raise validation("Timestamps must be local civil time without a UTC offset.", "Remove the offset.")
+    s = pd.Series(df["load_kw"].to_numpy(dtype=np.float64), index=idx)
+    s = s[~((s.index.month == 2) & (s.index.day == 29))]
+    hourly = s.resample("h").mean().dropna()
+    if len(hourly) < 28 * 24:
+        raise validation(f"Partial-year extension needs at least 4 weeks of data; got {len(hourly)} hours.",
+                         "Provide at least 672 hourly values (or the 15/30-minute equivalent).")
+    if len(hourly) > 8760:
+        raise validation("More than one year of data supplied.", "Import it without extend_partial.")
+    ts = hourly.index
+    doy = np.array([pd.Timestamp(2023, t.month, t.day).dayofyear - 1 for t in ts], dtype=np.int64)
+    hours = ts.hour.to_numpy().astype(np.int64)
+    pos = doy * 24 + hours
+    if len(np.unique(pos)) != len(pos):
+        raise validation("The data covers the same calendar hour twice (for example, in two different years).",
+                         "Supply one continuous period shorter than a year.")
+    pack = get_pack(site["country_pack"])
+    series, measured = extend_partial_year(doy, hours, hourly.to_numpy(), pack.manifest.weekend_days, monthly_kwh)
+    prov = {"partial_year": True, "measured_hours": int(measured.sum()),
+            "measured_from": str(ts.min()), "measured_to": str(ts.max()),
+            "extension": "day-type mean profile" + (", scaled to monthly_kwh" if monthly_kwh else ""),
+            "resolution_min": resolution_min}
+    flags = [warning(WarningCode.SYNTHETIC_INPUT, f"Partly synthetic load: {int(measured.sum())} of 8760 hours "
+                     "measured; the rest is extended from the measured day-type profiles.", path="load").model_dump()]
+    return series, prov, flags
+
+
 def import_timeseries(app: Helionyx, site_id: str, kind: str, csv_text: str | None = None,
                       file_path: str | None = None, resolution_min: int = 60, units: str | None = None,
-                      height_m: float | None = None, base_resource_id: str | None = None) -> dict[str, Any]:
+                      height_m: float | None = None, base_resource_id: str | None = None,
+                      extend_partial: bool = False, monthly_kwh: list[float] | None = None) -> dict[str, Any]:
     site = get_site(app, site_id)
     df = _read_csv(app, csv_text, file_path)
+    if extend_partial:
+        if kind != "load" or "load_kw" not in df.columns:
+            raise validation("extend_partial applies to load data with a load_kw column.", "Use kind='load'.")
+        if monthly_kwh is not None and len(monthly_kwh) != 12:
+            raise validation("monthly_kwh must have 12 values.", "Give one value per month.")
+        from helionyx.core.load import load_stats
+
+        series, extra, flags = _extend_partial_load(site, df, resolution_min, monthly_kwh)
+        prov = {"source": "csv_upload", "file": sanitise(file_path) if file_path else "inline", "units": "load_kw",
+                "retrieved_at": now_iso(), "license": "user supplied", **extra}
+        return _store_dataset(app, site_id, "load", pd.DataFrame({"load_kw": series}), "csv_upload", True, prov,
+                              load_stats(series), flags, "load")
     if kind not in KIND_COLUMN:
         raise validation(f"Unknown kind '{sanitise(kind)}'.", "Use one of: load, ghi, temp, wind.")
     col = KIND_COLUMN[kind]

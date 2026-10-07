@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "helionyx-microgridspy"
+version = "0.2.0.dev0"
+description = "MicroGridsPy cross-check adapter for Helionyx (separate package: MicroGridsPy is EUPL-1.2)"
+readme = "README.md"
+license = "EUPL-1.2"
+requires-python = ">=3.10"
+dependencies = ["microgridspy>=0.4,<0.5", "highspy>=1.7", "numpy>=1.26", "pandas>=2.2", "pyyaml>=6"]
+
+[project.scripts]
+helionyx-microgridspy = "helionyx_microgridspy.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/helionyx_microgridspy"]

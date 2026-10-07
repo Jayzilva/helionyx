@@ -92,7 +92,10 @@ def test_reopt_prepare_and_fixture(shared_app, hotel_ids, monkeypatch, tmp_path:
     assert len(body["ElectricLoad"]["loads_kw"]) == 8760
     assert len(body["ElectricTariff"]["tou_energy_rates_per_kwh"]) == 8760
     assert len(body["PV"]["production_factor_series"]) == 8760
-    assert body["ElectricTariff"]["wholesale_rate"] == 20.0
+    # money is scaled into REopt's USD-like ranges and scaled back in normalise()
+    assert body["ElectricTariff"]["wholesale_rate"] == pytest.approx(20.0 / 300.0)
+    assert body["PV"]["installed_cost_per_kw"] == pytest.approx(160000 / 300.0)
+    assert body["ElectricStorage"]["installed_cost_constant"] == 0.0 and body["PV"]["federal_itc_fraction"] == 0.0
     fixture = tmp_path / "reopt.json"
     fixture.write_text(json.dumps({"status": "optimal", "run_uuid": "test-uuid", "outputs": {
         "PV": {"size_kw": 180.0}, "ElectricStorage": {"size_kwh": 50.0, "size_kw": 25.0},
@@ -120,7 +123,7 @@ def test_reopt_without_key_fails_cleanly(shared_app, hotel_ids, monkeypatch):
     assert st["state"] == "failed" and st["error"]["code"] in ("HNX-E009", "HNX-E003")
 
 
-@pytest.mark.parametrize("bad", ["sama", "microgridspy"])
+@pytest.mark.parametrize("bad", ["homer", "pypsa"])
 def test_unsupported_solvers(shared_app, hotel_ids, bad):
     from helionyx.errors import HelionyxError
 
@@ -128,3 +131,49 @@ def test_unsupported_solvers(shared_app, hotel_ids, bad):
     with pytest.raises(HelionyxError) as e:
         run.start_run(shared_app, doc["scenario_id"], solver=bad)
     assert e.value.code.value == "HNX-E008"
+
+
+def test_pack_build_and_verified_update(tmp_path, monkeypatch):
+    import json as _json
+
+    from helionyx.errors import HelionyxError
+    from helionyx.infra import pack_update
+    from helionyx.infra.packs import get_pack
+
+    src = tmp_path / "src" / "lk"
+    shutil.copytree(PACKS_ROOT / "lk", src)
+    manifest_yaml = src / "pack.yaml"
+    manifest_yaml.write_text(manifest_yaml.read_text(encoding="utf-8").replace("2026.10.0", "2099.01.0"),
+                             encoding="utf-8")
+    rel = pack_update.build(src, tmp_path / "release")
+    ws = tmp_path / "ws"
+    monkeypatch.setenv("HNX_WORKSPACE", str(ws))
+    get_pack.cache_clear()
+    try:
+        # tampered archive is rejected
+        bad = tmp_path / "release" / "bad.json"
+        bad.write_text(_json.dumps({**{k: rel[k] for k in ("country", "version", "archive")}, "sha256": "0" * 64}))
+        with pytest.raises(HelionyxError):
+            pack_update.update(ws, "lk", str(bad))
+        out = pack_update.update(ws, "lk", str(tmp_path / "release" / "pack-lk.json"))
+        assert out["installed"] and out["version"] == "2099.01.0"
+        assert get_pack("lk").manifest.version == "2099.01.0"
+        again = pack_update.update(ws, "lk", str(tmp_path / "release" / "pack-lk.json"))
+        assert not again["installed"]
+    finally:
+        monkeypatch.delenv("HNX_WORKSPACE")
+        get_pack.cache_clear()
+
+
+def test_reopt_recorded_live_fixture(shared_app, hotel_ids, monkeypatch):
+    from helionyx.adapters.reopt import ReoptAdapter
+
+    doc = create(shared_app, hotel_input(hotel_ids))
+    monkeypatch.setenv("HNX_REOPT_FIXTURE", str(ROOT / "tests" / "fixtures" / "reopt_rc2_results.json"))
+    adapter = ReoptAdapter(shared_app)
+    scn = get_scenario(shared_app, doc["scenario_id"])
+    cand = adapter.normalise(adapter.run({}, lambda *a: None), scn)
+    assert cand["sizes"]["pv_kwp"] == 180.0 and cand["sizes"]["bess_kwh"] == 0.0
+    assert cand["metrics"]["npc"] == pytest.approx(422849.6756 * 300)
+    assert cand["metrics"]["irr_pct"] == pytest.approx(23.4)
+    assert cand["solver"]["label"] == "MILP, perfect foresight"

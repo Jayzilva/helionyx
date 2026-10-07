@@ -68,3 +68,41 @@ def load_stats(series: FloatArray) -> dict[str, Any]:
         "monthly_kwh": monthly,
         "average_daily_profile_kw": avg_daily,
     }
+
+
+def extend_partial_year(day_of_year: npt.NDArray[np.int64], hour: npt.NDArray[np.int64], values: FloatArray,
+                        weekend_days: Sequence[int], monthly_kwh: Sequence[float] | None = None,
+                        ) -> tuple[FloatArray, npt.NDArray[np.bool_]]:
+    """Extend measured hourly load (at least 4 weeks) to a full year (FR-LOAD-007).
+
+    Measured hours are kept exactly at their position in the representative year.
+    Missing hours take the mean measured profile of their day type (weekday or
+    weekend) and hour; when ``monthly_kwh`` is given, the synthetic hours of each
+    month are scaled so the month total matches it. Returns (series, measured mask).
+    """
+    from helionyx.core.engine.timeaxis import is_weekend
+
+    pos = day_of_year * 24 + hour
+    measured = np.zeros(HOURS, dtype=np.bool_)
+    series = np.zeros(HOURS)
+    series[pos] = values
+    measured[pos] = True
+    weekend = is_weekend(weekend_days)
+    profile = np.zeros((2, 24))
+    for wk in (0, 1):
+        for h in range(24):
+            sel = measured & (weekend == bool(wk)) & (HOUR_OF_DAY == h)
+            if not sel.any():  # no measured day of this type: fall back to all days
+                sel = measured & (HOUR_OF_DAY == h)
+            profile[wk, h] = series[sel].mean()
+    fill = ~measured
+    series[fill] = profile[weekend[fill].astype(int), HOUR_OF_DAY[fill]]
+    if monthly_kwh is not None:
+        for m in range(12):
+            month = MONTH == m
+            synth = month & fill
+            target = monthly_kwh[m] - series[month & measured].sum()
+            cur = series[synth].sum()
+            if synth.any() and cur > 0 and target > 0:
+                series[synth] *= target / cur
+    return np.asarray(series, dtype=np.float64), measured

@@ -123,6 +123,7 @@ def load_pack_from(root: Path) -> tuple[Pack | None, list[str]]:
 
 @lru_cache(maxsize=8)
 def get_pack(country: str) -> Pack:
+    """The bundled pack, or a newer valid one installed by `helionyx pack update` in the workspace."""
     root = PACKS_ROOT / country
     if not root.is_dir():
         raise not_found("country pack", country)
@@ -130,4 +131,15 @@ def get_pack(country: str) -> Pack:
     if pack is None:
         raise validation(f"Country pack '{country}' failed validation.",
                          "Run `helionyx pack validate` and fix the listed files.", errors=errors[:10])
+    from helionyx.infra.settings import Settings
+
+    installed = Settings().workspace / "packs" / country
+    if installed.is_dir():
+        newer, _ = load_pack_from(installed)
+        if newer is not None and _calver(newer.manifest.version) > _calver(pack.manifest.version):
+            return newer
     return pack
+
+
+def _calver(version: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in version.split("."))

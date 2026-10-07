@@ -26,8 +26,9 @@ of it. See the [Product Requirements Document](Helionyx-PRD.md) and the
 
 ## Status
 
-**v0.1 MVP — in development.** The engine, MCP server, CLI and skill work end to end on
-the bundled reference cases. However:
+**v0.2 (Validation) — in development.** The v0.1 MVP (engine, MCP server, CLI, skill) works
+end to end on the bundled reference cases; v0.2 adds cross-check solvers, a heuristic and
+Pareto search, two-variable sensitivity, Excel reports and the HOMER parity kit. However:
 
 > **The tariff rates, component costs, fuel price, discount rates and emission factors in
 > the `lk` pack are unverified placeholders.** They exist so the software can be built
@@ -56,13 +57,18 @@ implementation decisions and open items.
   wind power curves, idealised battery, diesel genset with load-following or
   cycle-charging, grid-connected TOU strategy), parallel enumerative search, HOMER-style
   economics (NPC, LCOE, replacements, salvage, payback, IRR) and emissions.
-- **Sensitivity:** one-variable sweeps with re-optimisation and NPC elasticities.
+- **Search:** full enumeration, or a seeded heuristic pattern search for spaces of up to 50
+  million candidates; Pareto front of NPC, CO₂ and capacity shortage.
+- **Sensitivity:** one-variable sweeps and two-variable grids with re-optimisation, optimal
+  architecture per case and NPC elasticities.
 - **Grounded explanations:** structured cost breakdowns, cost drivers, binding
   constraints, dispatch statistics and comparisons, with provenance and a disclaimer on
   every result.
-- **Exports:** HOMER-importable series plus a parameter sheet, Markdown reports, hourly
-  time series and scenario YAML.
-- **REopt v3 adapter** (optional, needs an API key) and `compare_runs` for cross-checks.
+- **Exports:** HOMER-importable series plus a parameter sheet, Markdown and Excel reports,
+  hourly time series and scenario YAML.
+- **Cross-check solvers** compared with `compare_runs`: REopt v3 (API key), and MicroGridsPy
+  and SAMA as separately licensed add-on packages (see [docs/adapters.md](docs/adapters.md)).
+- **HOMER parity kit:** protocol, results template and `helionyx parity compare`.
 - **Claude skill and MCP prompts** for guided workflows, plus a grounding checker.
 
 ## Install
@@ -138,9 +144,10 @@ If `helionyx` is not on your `PATH`, use uv instead:
 helionyx serve --transport http --port 8080
 ```
 
-This serves MCP at `http://127.0.0.1:8080/mcp` and a health check at `/healthz`.
-**v0.1 has no authentication**; keep it on localhost. OAuth 2.1 with Microsoft Entra ID
-arrives with hosted mode in v1.0.
+This serves MCP at `http://127.0.0.1:8080/mcp` and a health check at `/healthz`. Set
+`HNX_API_KEY` to require `Authorization: Bearer <key>` (development-grade protection; the CLI
+refuses a non-local bind without it). OAuth 2.1 with Microsoft Entra ID arrives with hosted
+mode in v1.0.
 
 ### Claude skill
 
@@ -159,7 +166,7 @@ Clients without skill support can use the MCP prompts listed below instead. See
 |---|---|---|
 | 1 | `create_site` | Register a site (location, time zone, country pack) |
 | 2 | `fetch_resource` | Hourly GHI, temperature and wind from NASA POWER or PVGIS, aligned to local time |
-| 3 | `import_timeseries` | Import a measured load or resource series from CSV |
+| 3 | `import_timeseries` | Import a measured load or resource series from CSV; extend 4+ weeks of load to a year |
 | 4 | `synthesize_load` | Build a load from archetypes, optionally calibrated to monthly bills |
 | 5 | `list_tariffs` | Browse the tariff pack |
 | 6 | `get_tariff` | Tariff charges, TOU periods, export schemes and staleness warnings |
@@ -167,17 +174,18 @@ Clients without skill support can use the MCP prompts listed below instead. See
 | 8 | `list_components` | Browse the component library |
 | 9 | `create_scenario` | Combine all inputs and the search space into a scenario |
 | 10 | `validate_scenario` | Errors, warnings and the full assumption audit |
-| 11 | `run_optimization` | Start an asynchronous simulation and ranking job |
+| 11 | `run_optimization` | Start an asynchronous job: `native` (enumeration), `heuristic`, `reopt`, `microgridspy` or `sama` |
 | 12 | `get_job_status` | Poll a job (state, progress, ETA, run ID) |
 | 13 | `cancel_job` | Cancel a job |
-| 14 | `get_results` | Ranked designs, base case, provenance and disclaimer |
+| 14 | `get_results` | Ranked designs, base case, search method, provenance and disclaimer |
+| 14b | `get_pareto_front` | Non-dominated designs over NPC, CO₂ and capacity shortage |
 | 15 | `explain_run` | Structured explanation of one design |
 | 16 | `get_monthly_summary` | Monthly energy flows and bills before and after |
-| 17 | `run_sensitivity` | One-variable sweep with re-optimisation (asynchronous) |
+| 17 | `run_sensitivity` | One-variable sweep or two-variable grid with re-optimisation (asynchronous) |
 | 18 | `get_sensitivity_results` | Optimal design per value and NPC elasticity |
 | 19 | `compare_runs` | Side-by-side comparison of runs (for example native vs REopt) |
 | 20 | `export_homer_csv` | HOMER-importable series and parameter sheet |
-| 21 | `export_report` | Markdown client report (Excel arrives in v0.2) |
+| 21 | `export_report` | Client report in Markdown or Excel |
 
 `run_optimization`, `run_sensitivity` and `get_job_status` accept `wait_seconds` (0–20).
 With 0 they return immediately; otherwise they wait and send progress notifications.
@@ -217,6 +225,9 @@ With 0 they return immediately; otherwise they wait and send progress notificati
 | `helionyx export homer <scenario_id> <dir>` | Write HOMER files |
 | `helionyx export report <run_id> [--format md] [--output path]` | Write a report |
 | `helionyx pack validate <path>` | Validate a data pack |
+| `helionyx pack build <path> <out_dir>` | Build a release archive and checksum manifest (maintainers) |
+| `helionyx pack update [--country lk] [--manifest URL]` | Install a newer, checksum-verified pack release |
+| `helionyx parity compare <homer.csv> [--output report.md]` | Compare HOMER Pro results with Helionyx on RC-1…RC-3 |
 | `helionyx eval grounding <transcripts_dir> [--threshold 0.95]` | Run the grounding checker |
 | `helionyx version` | Print the version |
 
@@ -234,6 +245,9 @@ Copy [`.env.example`](.env.example) or set these environment variables:
 | `HNX_REOPT_FIXTURE` | — | Replay a recorded REopt response instead of calling the API (tests) |
 | `HNX_REOPT_URL` | `https://developer.nlr.gov/api/reopt/stable` | REopt base URL |
 | `HNX_LOG_LEVEL` | `INFO` | Log level |
+| `HNX_API_KEY` | — | Bearer key required by HTTP mode (development only); needed to bind to a non-local address |
+| `HNX_MICROGRIDSPY_CMD` | `helionyx-microgridspy` | Command of the MicroGridsPy adapter package |
+| `HNX_SAMA_CMD` | `helionyx-sama` | Command of the SAMA adapter package |
 
 ## Repository layout
 
@@ -246,6 +260,7 @@ src/helionyx/
   infra/          settings, SQLite store, Parquet artefact store, HTTP cache, jobs, pack loader
   packs/lk/       Sri Lanka country pack (tariffs, components, archetypes, emissions, defaults, samples)
   templates/      report and HOMER parameter templates, methodology
+packages/         separately licensed solver adapters (helionyx-microgridspy, helionyx-sama)
 skills/helionyx/  Claude skill
 reference_cases/  RC-1 to RC-3 study files
 evals/grounding/  grounding evaluation prompt set
@@ -260,6 +275,7 @@ docs/             quickstart, methodology, data-pack guide, skill guide, impleme
 - [Methodology](docs/methodology.md)
 - [Data-pack guide](docs/data-pack-guide.md)
 - [Skill guide](docs/skill-guide.md)
+- [Solver adapters](docs/adapters.md)
 - [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
 - [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
@@ -267,7 +283,8 @@ docs/             quickstart, methodology, data-pack guide, skill guide, impleme
 
 - **Code:** [Apache License 2.0](LICENSE).
 - **Data packs:** CC BY 4.0, citing the original source of each record.
-- Copyleft engines (for example SAMA, GPL-3) will ship as separate optional packages.
+- Copyleft solvers ship as separate packages run as subprocesses: `helionyx-microgridspy`
+  (EUPL-1.2) and `helionyx-sama` (AGPL-3.0). The core never imports them.
 
 ## Disclaimer
 

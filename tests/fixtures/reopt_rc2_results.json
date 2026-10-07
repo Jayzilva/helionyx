@@ -1,0 +1,12 @@
+{
+ "status": "optimal",
+ "run_uuid": "f605644a-7883-4739-9459-bf6c7a5df28f",
+ "recorded": "RC-2 live run against developer.nlr.gov (REopt API v3, DEMO_KEY) on 2026-10-07. Money in REopt units = LKR / 300. Only the fields Helionyx reads are kept. This run used REopt's default PV degradation of 0.5 %/yr; the adapter now sets degradation_fraction to 0.",
+ "outputs": {
+  "PV": {"size_kw": 180.0, "annual_energy_produced_kwh": 293919.2, "year_one_energy_produced_kwh": 304927.0, "annual_energy_exported_kwh": 72935.0},
+  "ElectricStorage": {"size_kw": 0.0, "size_kwh": 0.0},
+  "Financial": {"lcc": 422849.6756, "initial_capital_costs": 95940.0, "simple_payback_years": 4.21, "internal_rate_of_return": 0.234},
+  "ElectricTariff": {"year_one_bill_before_tax": 33665.4},
+  "Site": {"renewable_electricity_fraction": null}
+ }
+}

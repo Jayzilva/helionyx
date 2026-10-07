@@ -1,10 +1,10 @@
-# Helionyx — MVP Implementation Plan (v0.1)
+# Helionyx — Implementation Plan (v0.1 MVP and v0.2 Validation)
 
 | | |
 |---|---|
-| **Scope** | PRD v0.1 features F1–F9 (Must) plus the v0.1 "Should" items F10–F13 |
+| **Scope** | v0.1: PRD F1–F9 plus the v0.1 "Should" items F10–F13. v0.2: PRD §10 Validation release (§6 below) |
 | **Source documents** | [`Helionyx-PRD.md`](../Helionyx-PRD.md), [`Helionyx-SRS.md`](../Helionyx-SRS.md) |
-| **Status** | In progress — see the status column below |
+| **Status** | v0.1 done (branch `feat/mvp-v0.1`); v0.2 code done, data and HOMER study open |
 | **Last updated** | 7 October 2026 |
 
 This plan turns the PRD and SRS into an ordered build. It records the
@@ -100,13 +100,46 @@ These come from SRS Appendix A and PRD §14. The code is complete for them; the
 | V9 | Genset fuel-curve defaults vs local datasheets | Literature defaults (F0 = 0.08145, F1 = 0.246). |
 | — | Component costs in LKR | Indicative market estimates, marked unverified. |
 | V2 | PVGIS coverage for Sri Lanka | Adapter implemented; falls back with HNX-E003 when out of coverage. |
-| V4 | REopt API key and off-grid field mapping | Adapter implemented against a recorded fixture; live run untested. |
-| V6 | HOMER Pro import check of exported files | v0.2 parity study. |
-| — | Grounding evaluation transcripts | Prompt set and checker shipped; transcripts must be captured in a real client. |
+| V4 | REopt API key and field mapping | **Done (v0.2):** field names checked against the live `/help` schema; RC-2 solved live on developer.nlr.gov (PV 180 kWp, no battery, NPC within 2 % of native). US incentives zeroed. The shared `DEMO_KEY` is rate-limited: use a personal key. Off-grid mapping still not supported. |
+| V5 | SAMA and MicroGridsPy licences | **Done (v0.2):** SAMAPy is AGPL-3.0 and MicroGridsPy is EUPL-1.2 — both copyleft, so both are separate packages run as subprocesses. |
+| V6 | HOMER Pro import format | Format checked against the HOMER Pro manual (one value per line, 8,760 rows from midnight 1 January, GHI in kW/m²). An import test inside HOMER Pro is part of the parity study. |
+| — | Grounding evaluation transcripts | Harness `evals/grounding/run_eval.py` captures them automatically through the Claude API. Needs Anthropic credentials and a budget approval to run (30 prompts × several tool turns). |
+| — | HTTP mode authentication | Interim bearer key (`HNX_API_KEY`); non-local binds refused without it. OAuth with Entra ID remains v1.0. |
 
-## 5. Deferred to v0.2 and later
+## 5. Deferred to v1.0 and later
 
-Two-variable sensitivity (FR-SEN-002), Excel reports, measured-load extension
-(FR-LOAD-007), heuristic optimiser (FR-OPT-005), MicroGridsPy and SAMA adapters,
-`helionyx pack update`, Pareto search, hosted mode with Entra ID, multi-year growth,
-DC coupling.
+Hosted mode with Entra ID (F19, IF-MCP-08), `delete_scenario` and retention, multi-year load
+growth and capacity expansion (F18), DC coupling and micro-hydro (F21), ecosystem packaging
+(F20), wind in the REopt and SAMA adapters, off-grid REopt mapping.
+
+## 6. v0.2 Validation release
+
+PRD §10: HOMER parity study, SAMA and MicroGridsPy adapters, two-variable sensitivity, Excel
+reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
+
+| WP | Work package | SRS refs | Status |
+|---|---|---|---|
+| WP19 | Two-variable sensitivity grids with optimal architecture per cell | FR-SEN-002 | Done |
+| WP20 | Excel report (7 sheets) sharing one data model with the Markdown report | FR-RPT-006 | Done |
+| WP21 | Heuristic optimiser (seeded multi-start pattern search, evaluation budget) | FR-OPT-005 | Done — within 1 % of the enumerated optimum on RC-1 and RC-3 |
+| WP22 | Pareto front over NPC, CO₂ and capacity shortage (`get_pareto_front`) | FR-OPT-006 (Could) | Done |
+| WP23 | Partial-year measured load extension | FR-LOAD-007 | Done |
+| WP24 | Subprocess adapter protocol `helionyx-adapter-io/1` | FR-ADP-001 | Done |
+| WP25 | `helionyx-microgridspy` package (EUPL-1.2), LP with HiGHS | FR-ADP-003 | Done — live runs on RC-2 and RC-3 |
+| WP26 | `helionyx-sama` package (AGPL-3.0), particle swarm | FR-ADP-004 | Done — live run on RC-3 (see docs/adapters.md) |
+| WP27 | Data-pack releases: `pack build`, checksum-verified `pack update` | §6.2 | Done |
+| WP28 | HOMER parity kit: protocol, template, `helionyx parity compare` | F15, §9.4 | Tooling done; **HOMER results pending (needs HOMER Pro access, PRD Q3)** |
+| WP29 | REopt adapter hardening and live verification | FR-ADP-002 (Must in v0.2) | Done |
+| WP30 | Grounding transcript harness | FR-SKL-003 | Done; run pending credentials |
+| WP31 | Interim HTTP bearer-key auth | NFR-SEC-03 (interim) | Done |
+| — | Two pilot users (one EPC, one planner) | PRD §10 | Not a code task — open |
+
+### v0.2 implementation decisions
+
+| # | Decision | Rationale |
+|---|---|---|
+| D13 | MicroGridsPy is isolated like SAMA (separate package, subprocess), contrary to the SRS assumption that only SAMA needed isolation. | MicroGridsPy is EUPL-1.2 (copyleft); constraint C5. |
+| D14 | Adapters exchange JSON files through a documented protocol instead of importing solver APIs. | Licence isolation, solver-specific Python versions, crash isolation. |
+| D15 | Money sent to REopt and SAMA is divided by a currency scale (FX rate, else 300) and scaled back. | REopt range-checks USD magnitudes; SAMA's penalty weights assume USD. Linear costs make the optimum scale-invariant. |
+| D16 | Enumeration limits move from `create_scenario` to `run_optimization`; scenarios up to 50 million candidates are accepted for the heuristic. | FR-OPT-005 needs scenarios larger than `max_candidates`. |
+| D17 | Installed pack releases override the bundled pack only when their CalVer is newer. | A stale download can never downgrade data. |

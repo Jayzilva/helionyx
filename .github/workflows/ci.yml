@@ -27,7 +27,7 @@ jobs:
           uv venv --python ${{ matrix.python }}
           uv pip install -e ".[dev]"
       - name: Lint
-        run: uv run --no-sync ruff check src tests
+        run: uv run --no-sync ruff check src tests packages
       - name: Type-check core
         run: uv run --no-sync mypy src/helionyx/core
       - name: Validate data pack
