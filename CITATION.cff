@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use Helionyx in your work, please cite it as below."
+title: "Helionyx: open-source hybrid renewable energy sizing for AI assistants"
+type: software
+authors:
+  - given-names: Jayath
+    family-names: De Silva
+repository-code: "https://github.com/Jayzilva/helionyx"
+url: "https://github.com/Jayzilva/helionyx"
+license: Apache-2.0
+version: 0.3.0
+date-released: "2026-10-07"
+keywords:
+  - model context protocol
+  - hybrid renewable energy
+  - microgrid sizing
+  - solar PV
+  - battery storage
+  - techno-economic analysis
+  - Sri Lanka
+abstract: >-
+  Helionyx is a Model Context Protocol server, command-line interface and Claude skill
+  that sizes hybrid energy systems (solar PV, wind, battery, diesel generator and grid).
+  It simulates every candidate design hour by hour for a year, discards designs that break
+  constraints and ranks the rest by net present cost, so an AI assistant can explain
+  results that come from a deterministic, reproducible solver run.

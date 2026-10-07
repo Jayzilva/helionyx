@@ -4,20 +4,26 @@ build-backend = "hatchling.build"
 
 [project]
 name = "helionyx"
-version = "1.0.0.dev0"
+version = "0.3.0"
 description = "Open-source hybrid renewable energy sizing for AI assistants (MCP server, CLI and Claude skill)"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
-authors = [{ name = "Jayath" }]
+authors = [{ name = "Jayath De Silva" }]
 keywords = ["mcp", "renewable-energy", "microgrid", "solar", "battery", "homer", "sri-lanka"]
 classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Education",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "License :: OSI Approved :: Apache Software License",
   "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
   "mcp>=2.3,<3",
@@ -41,11 +47,23 @@ dependencies = [
 eval = ["anthropic>=1.0"]
 dev = ["pytest>=8", "pytest-cov>=5", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11", "types-PyYAML", "pip-audit", "pip-licenses"]
 
+[project.urls]
+Homepage = "https://github.com/Jayzilva/helionyx"
+Documentation = "https://github.com/Jayzilva/helionyx/tree/main/docs"
+Changelog = "https://github.com/Jayzilva/helionyx/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Jayzilva/helionyx/issues"
+Disclaimer = "https://github.com/Jayzilva/helionyx/blob/main/DISCLAIMER.md"
+
 [project.scripts]
 helionyx = "helionyx.api.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/helionyx"]
+
+[tool.hatch.build.targets.sdist]
+# The copyleft adapter packages, private notes and eval transcripts stay out of the core sdist.
+include = ["/src/helionyx", "/tests", "/reference_cases", "/README.md", "/LICENSE", "/DISCLAIMER.md",
+           "/CHANGELOG.md", "/CITATION.cff", "/pyproject.toml"]
 
 [tool.ruff]
 line-length = 120

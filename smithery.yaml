@@ -1,0 +1,23 @@
+# Smithery configuration: https://smithery.ai/docs/config/smithery.yaml
+# Runs the Helionyx MCP server over stdio inside the repository Dockerfile.
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      offline:
+        type: boolean
+        default: false
+        description: Use only cached and bundled data (no network calls).
+      reoptApiKey:
+        type: string
+        description: Optional NREL REopt API key for the reopt cross-check solver.
+  commandFunction: |-
+    (config) => ({
+      command: 'helionyx',
+      args: ['serve'],
+      env: Object.assign(
+        { HNX_OFFLINE: config.offline ? '1' : '0' },
+        config.reoptApiKey ? { HNX_REOPT_API_KEY: config.reoptApiKey } : {}
+      )
+    })

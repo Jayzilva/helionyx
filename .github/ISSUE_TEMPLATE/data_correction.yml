@@ -1,0 +1,22 @@
+name: Data correction (tariffs, costs, emission factors)
+description: Report a wrong or outdated value in a country data pack
+labels: [data]
+body:
+  - type: input
+    id: path
+    attributes:
+      label: Pack and record (for example lk / tariffs / lk.ceb.H2)
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Current value and correct value
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source (official publication or URL) and its effective date
+    validations:
+      required: true

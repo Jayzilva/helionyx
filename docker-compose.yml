@@ -3,9 +3,11 @@
 services:
   helionyx:
     build: .
+    command: ["helionyx", "serve", "--transport", "http", "--host", "0.0.0.0", "--port", "8080"]
     ports:
-      - "127.0.0.1:8080:8080"   # v0.1 has no authentication: bind to localhost only
+      - "127.0.0.1:8080:8080"   # development-grade bearer key only: keep on localhost
     environment:
+      HNX_API_KEY: ${HNX_API_KEY:?set HNX_API_KEY to a random string}
       HNX_WORKSPACE: /data
       HNX_LOG_LEVEL: INFO
     volumes:

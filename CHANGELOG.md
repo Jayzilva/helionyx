@@ -6,7 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased] — 1.0.0
 
-Development started on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.md` §7.
+Development continues on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.md` §7.
+
+## [0.3.0] — 2026-10-07 — Multi-year and packaging
 
 ### Added
 
@@ -16,6 +18,16 @@ Development started on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.md
   searched PV, wind, battery or genset capacity in a given year. Year-by-year economics
   (`evaluate_years`), staged capital, per-bank replacement and salvage, and reliability
   constraints checked in every sampled year. Results carry a `multi_year` block per candidate.
+- Published to PyPI (`uvx helionyx serve`); MCP Registry `server.json`, Glama and Smithery
+  configuration; `CITATION.cff`, `DISCLAIMER.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue
+  and pull-request templates; a trusted-publishing release workflow.
+
+### Changed
+
+- The Docker image starts the MCP server over stdio by default; `docker-compose.yml` runs
+  Streamable HTTP and requires `HNX_API_KEY`.
+- The REopt API key is sent in the `X-Api-Key` header instead of the URL, so it cannot appear
+  in HTTP request logs.
 
 ## [0.2.0] — 2026-10-07 — Validation
 

@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 
+LABEL io.modelcontextprotocol.server.name="io.github.Jayzilva/helionyx"       org.opencontainers.image.source="https://github.com/Jayzilva/helionyx"       org.opencontainers.image.licenses="Apache-2.0"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HNX_WORKSPACE=/data
@@ -15,6 +17,6 @@ USER helionyx
 VOLUME ["/data"]
 EXPOSE 8080
 
-# WARNING: v0.1 HTTP mode has NO authentication (OAuth 2.1 arrives in v1.0).
-# Publish this port only on localhost or a trusted private network.
-CMD ["helionyx", "serve", "--transport", "http", "--host", "0.0.0.0", "--port", "8080"]
+# Default: MCP over stdio (docker run -i). For Streamable HTTP, override the command and set
+# HNX_API_KEY; the server refuses a non-local bind without it (see docker-compose.yml).
+CMD ["helionyx", "serve"]

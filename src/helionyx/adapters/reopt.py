@@ -154,7 +154,7 @@ class ReoptAdapter:
                                 "Disable HNX_OFFLINE to use REopt.")
         _acquire_slot()
         try:
-            r = httpx.post(f"{BASE_URL}/job/", params={"api_key": key}, json=prepared, timeout=60)
+            r = httpx.post(f"{BASE_URL}/job/", headers={"X-Api-Key": key}, json=prepared, timeout=60)
             if r.status_code >= 400:
                 raise HelionyxError(ErrorCode.EXTERNAL_SOURCE_UNAVAILABLE,
                                     f"REopt rejected the job (HTTP {r.status_code}).",
@@ -163,7 +163,7 @@ class ReoptAdapter:
             start = time.monotonic()
             while True:
                 progress(min(90.0, 5.0 + (time.monotonic() - start) / 6.0), "waiting for REopt")
-                res = httpx.get(f"{BASE_URL}/job/{run_uuid}/results/", params={"api_key": key}, timeout=60)
+                res = httpx.get(f"{BASE_URL}/job/{run_uuid}/results/", headers={"X-Api-Key": key}, timeout=60)
                 body: dict[str, Any] = res.json()
                 api_error = body.get("error")
                 if isinstance(api_error, dict) and api_error.get("code") == "OVER_RATE_LIMIT":

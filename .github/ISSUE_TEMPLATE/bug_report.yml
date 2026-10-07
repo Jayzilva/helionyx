@@ -1,0 +1,32 @@
+name: Bug report
+description: Something does not work or a result looks wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Helionyx gives pre-feasibility estimates with placeholder data; see DISCLAIMER.md.
+        Do not paste API keys, personal data or confidential load data.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Scenario YAML (remove anything confidential), commands or tool calls, and the run ID.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Helionyx version (`helionyx version`)
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: OS, Python version and MCP client

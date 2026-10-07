@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Jayzilva/helionyx",
+  "title": "Helionyx",
+  "description": "Size hybrid solar PV, wind, battery, diesel and grid systems: hourly simulation, NPC ranking.",
+  "repository": {
+    "url": "https://github.com/Jayzilva/helionyx",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "helionyx",
+      "version": "0.3.0",
+      "runtimeHint": "uvx",
+      "packageArguments": [
+        { "type": "positional", "value": "serve" }
+      ],
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "HNX_WORKSPACE", "description": "Workspace directory for the database, artefacts and exports (default ~/.helionyx)", "isRequired": false },
+        { "name": "HNX_OFFLINE", "description": "Set to 1 to use only cached and bundled data (no network calls)", "isRequired": false },
+        { "name": "HNX_REOPT_API_KEY", "description": "Optional NREL REopt API key for the reopt cross-check solver", "isRequired": false, "isSecret": true }
+      ]
+    }
+  ]
+}

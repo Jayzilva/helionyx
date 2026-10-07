@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="Helionyx: open-source hybrid renewable energy sizing for AI assistants. 8,760 hours simulated per design, search spaces of up to 50 million candidates, 22 MCP tools, 5 solvers." width="100%">
+  <img src="https://raw.githubusercontent.com/Jayzilva/helionyx/main/docs/assets/hero.svg" alt="Helionyx: open-source hybrid renewable energy sizing for AI assistants. 8,760 hours simulated per design, search spaces of up to 50 million candidates, 22 MCP tools, 5 solvers." width="100%">
 </p>
 
 <p align="center">
-  <img alt="Version 1.0.0.dev0" src="https://img.shields.io/badge/version-1.0.0.dev0-0EA5E9">
+  <img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-0EA5E9">
   <img alt="Python 3.11 to 3.13" src="https://img.shields.io/badge/python-3.11%E2%80%933.13-3776AB">
   <img alt="Model Context Protocol" src="https://img.shields.io/badge/MCP-server-14B8A6">
   <img alt="Apache 2.0 licence" src="https://img.shields.io/badge/licence-Apache%202.0-22C55E">
@@ -21,7 +21,7 @@ Pro workflow with open-source engines that need no licence:
 3. rank the rest by net present cost (NPC).
 
 <p align="center">
-  <img src="docs/assets/how-it-works.svg" alt="How a run works: describe the site, load and tariff; simulate every candidate for 8,760 hours; filter out designs that break constraints; rank the rest by NPC and explain them with a run ID." width="100%">
+  <img src="https://raw.githubusercontent.com/Jayzilva/helionyx/main/docs/assets/how-it-works.svg" alt="How a run works: describe the site, load and tariff; simulate every candidate for 8,760 hours; filter out designs that break constraints; rank the rest by NPC and explain them with a run ID." width="100%">
 </p>
 
 The assistant never produces numbers itself. It asks scoping questions, calls
@@ -34,8 +34,8 @@ outage modelling and load archetypes for Sri Lankan building types. The engine i
 country-agnostic; other countries can be added as data packs.
 
 Helionyx is a **pre-feasibility and teaching tool that complements HOMER**, not a clone
-of it. See the [Product Requirements Document](Helionyx-PRD.md) and the
-[Software Requirements Specification](Helionyx-SRS.md).
+of it. See the [Product Requirements Document](https://github.com/Jayzilva/helionyx/blob/main/Helionyx-PRD.md) and the
+[Software Requirements Specification](https://github.com/Jayzilva/helionyx/blob/main/Helionyx-SRS.md).
 
 ## Status
 
@@ -43,7 +43,8 @@ of it. See the [Product Requirements Document](Helionyx-PRD.md) and the
 |---|---|---|
 | v0.1 MVP | Released | Engine, MCP server, CLI, Claude skill, `lk` pack, reference cases |
 | v0.2.0 Validation | Released 7 October 2026 | Cross-check solvers, heuristic and Pareto search, two-variable sensitivity, Excel reports, HOMER parity kit |
-| v1.0 | **In development** | Multi-year load growth and capacity expansion (done); hosted mode with Entra ID, retention, OpenTelemetry, ecosystem packaging (planned) |
+| v0.3.0 | Released 7 October 2026 | Multi-year load growth and capacity expansion; PyPI and MCP Registry packaging |
+| v1.0 | **In development** | Hosted mode with Entra ID, retention, OpenTelemetry, ecosystem packaging (planned) |
 
 > **The tariff rates, component costs, fuel price, discount rates and emission factors in
 > the `lk` pack are unverified placeholders.** They exist so the software can be built
@@ -51,7 +52,7 @@ of it. See the [Product Requirements Document](Helionyx-PRD.md) and the
 > the data (SRS Appendix A, items V3, V8 and V9). `validate_scenario` raises warning
 > HNX-W001 for every unverified tariff.
 
-See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the build plan,
+See [docs/IMPLEMENTATION_PLAN.md](https://github.com/Jayzilva/helionyx/blob/main/docs/IMPLEMENTATION_PLAN.md) for the build plan,
 implementation decisions and open items.
 
 ## Architecture
@@ -114,7 +115,7 @@ sequenceDiagram
 ## Multi-year analysis
 
 <p align="center">
-  <img src="docs/assets/multi-year.svg" alt="Illustration: peak load grows 3 percent a year over 20 years; the initial system is expanded with 50 kWp PV and 150 kWh battery at the start of year 10. Helionyx simulates sample years and interpolates between them." width="100%">
+  <img src="https://raw.githubusercontent.com/Jayzilva/helionyx/main/docs/assets/multi-year.svg" alt="Illustration: peak load grows 3 percent a year over 20 years; the initial system is expanded with 50 kWp PV and 150 kWh battery at the start of year 10. Helionyx simulates sample years and interpolates between them." width="100%">
 </p>
 
 Add `multi_year` to a scenario to grow the load and search a staged investment:
@@ -132,7 +133,7 @@ multi_year:
 The expansion sizes become extra search axes. Stage capital enters the cash flow in its
 year, with its own replacements and salvage, and reliability constraints must hold in
 every sampled year. Each candidate reports its sampled years under `multi_year.years`.
-See [the methodology](docs/methodology.md) (decision D20).
+See [the methodology](https://github.com/Jayzilva/helionyx/blob/main/docs/methodology.md) (decision D20).
 
 ## Features
 
@@ -164,7 +165,7 @@ See [the methodology](docs/methodology.md) (decision D20).
 - **Exports:** HOMER-importable series plus a parameter sheet, Markdown and Excel reports,
   hourly time series and scenario YAML.
 - **Cross-check solvers** compared with `compare_runs`: REopt v3 (API key), and MicroGridsPy
-  and SAMA as separately licensed add-on packages (see [docs/adapters.md](docs/adapters.md)).
+  and SAMA as separately licensed add-on packages (see [docs/adapters.md](https://github.com/Jayzilva/helionyx/blob/main/docs/adapters.md)).
 - **HOMER parity kit:** protocol, results template and `helionyx parity compare`.
 - **Claude skill and MCP prompts** for guided workflows, plus a grounding checker.
 
@@ -173,7 +174,17 @@ See [the methodology](docs/methodology.md) (decision D20).
 Helionyx needs Python 3.11–3.13.
 
 ```bash
-git clone <repository-url> helionyx
+# run without installing (recommended for MCP clients)
+uvx helionyx serve
+
+# or install from PyPI
+pip install helionyx
+```
+
+From source, for development:
+
+```bash
+git clone https://github.com/Jayzilva/helionyx.git helionyx
 cd helionyx
 
 # with uv
@@ -197,14 +208,14 @@ This sizes PV and battery for a 60-room hotel in Negombo on the CEB hotel TOU ta
 prints the five lowest-NPC designs with the grid-only base case. The first run takes a
 little longer while Numba compiles the dispatch kernel.
 
-See [docs/quickstart.md](docs/quickstart.md) for a full walk-through.
+See [docs/quickstart.md](https://github.com/Jayzilva/helionyx/blob/main/docs/quickstart.md) for a full walk-through.
 
 ## Connect to an AI assistant
 
 ### Claude Code
 
 ```bash
-claude mcp add helionyx -- helionyx serve
+claude mcp add helionyx -- uvx helionyx serve
 ```
 
 ### Claude Desktop
@@ -255,7 +266,7 @@ cp -r skills/helionyx ~/.claude/skills/
 ```
 
 Clients without skill support can use the MCP prompts listed below instead. See
-[docs/skill-guide.md](docs/skill-guide.md).
+[docs/skill-guide.md](https://github.com/Jayzilva/helionyx/blob/main/docs/skill-guide.md).
 
 ## MCP tools
 
@@ -330,7 +341,7 @@ With 0 they return immediately; otherwise they wait and send progress notificati
 
 ## Configuration
 
-Copy [`.env.example`](.env.example) or set these environment variables:
+Copy [`.env.example`](https://github.com/Jayzilva/helionyx/blob/main/.env.example) or set these environment variables:
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -368,25 +379,31 @@ docs/             quickstart, methodology, data-pack guide, skill guide, impleme
 
 ## Documentation
 
-- [Quickstart](docs/quickstart.md)
-- [Methodology](docs/methodology.md)
-- [Data-pack guide](docs/data-pack-guide.md)
-- [Skill guide](docs/skill-guide.md)
-- [Solver adapters](docs/adapters.md)
-- [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
-- [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+- [Quickstart](https://github.com/Jayzilva/helionyx/blob/main/docs/quickstart.md)
+- [Methodology](https://github.com/Jayzilva/helionyx/blob/main/docs/methodology.md)
+- [Data-pack guide](https://github.com/Jayzilva/helionyx/blob/main/docs/data-pack-guide.md)
+- [Skill guide](https://github.com/Jayzilva/helionyx/blob/main/docs/skill-guide.md)
+- [Solver adapters](https://github.com/Jayzilva/helionyx/blob/main/docs/adapters.md)
+- [Implementation plan](https://github.com/Jayzilva/helionyx/blob/main/docs/IMPLEMENTATION_PLAN.md)
+- [Contributing](https://github.com/Jayzilva/helionyx/blob/main/CONTRIBUTING.md) · [Changelog](https://github.com/Jayzilva/helionyx/blob/main/CHANGELOG.md)
 
 ## Licence
 
-- **Code:** [Apache License 2.0](LICENSE).
+- **Code:** [Apache License 2.0](https://github.com/Jayzilva/helionyx/blob/main/LICENSE).
 - **Data packs:** CC BY 4.0, citing the original source of each record.
 - Copyleft solvers ship as separate packages run as subprocesses: `helionyx-microgridspy`
   (EUPL-1.2) and `helionyx-sama` (AGPL-3.0). The core never imports them.
 
 ## Disclaimer
 
-> Helionyx results are pre-feasibility estimates based on simplified models, synthetic or
-> user-supplied data, and dated tariff and cost assumptions. They are not a substitute for
-> detailed engineering design, bankable energy yield assessment, or review and sign-off by
-> a chartered engineer. Always verify tariffs and connection rules with the relevant
-> utility and regulator.
+> Helionyx results are **pre-feasibility estimates** based on simplified models, synthetic or
+> user-supplied data, and dated, **unverified placeholder** tariff and cost assumptions. They
+> are not engineering design, a bankable yield assessment, financial advice or a
+> grid-compliance study, and are no substitute for review by a chartered engineer. The
+> software is provided "as is", without warranty or liability (Apache-2.0 §7–8). Helionyx is
+> an independent project, not affiliated with or endorsed by HOMER Energy / UL Solutions,
+> NREL, NASA, the EC JRC, CEB, LECO or Anthropic; trademarks belong to their owners. Some
+> features send site or load data to third-party services. Read the full
+> [disclaimer](https://github.com/Jayzilva/helionyx/blob/main/DISCLAIMER.md) before use.
+
+<!-- mcp-name: io.github.Jayzilva/helionyx -->
