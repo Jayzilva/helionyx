@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" role="img" aria-labelledby="t d">
   <title id="t">Helionyx</title>
-  <desc id="d">Helionyx: open-source hybrid renewable energy sizing for AI assistants. Key figures: 8,760-hour simulation per design, up to 50 million candidates, 22 MCP tools, 5 solvers.</desc>
+  <desc id="d">Helionyx: open-source hybrid renewable energy sizing for AI assistants. Key figures: 8,760-hour simulation per design, search spaces of up to 50 million candidates (heuristic), 22 MCP tools, 5 solvers.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0B1220"/>
@@ -36,7 +36,7 @@
     <rect x="328" y="222" width="252" height="112" rx="14" fill="#1E293B" stroke="#334155" stroke-width="2"/>
     <rect x="328" y="222" width="6" height="112" rx="3" fill="#38BDF8"/>
     <text x="354" y="276" font-size="40" font-weight="700" fill="#F8FAFC">50 M</text>
-    <text x="354" y="310" font-size="17" fill="#94A3B8">candidates (heuristic search)</text>
+    <text x="354" y="310" font-size="17" fill="#94A3B8">search space (heuristic)</text>
 
     <rect x="600" y="222" width="252" height="112" rx="14" fill="#1E293B" stroke="#334155" stroke-width="2"/>
     <rect x="600" y="222" width="6" height="112" rx="3" fill="#14B8A6"/>

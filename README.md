@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="Helionyx: open-source hybrid renewable energy sizing for AI assistants. 8,760 hours simulated per design, up to 50 million candidates, 22 MCP tools, 5 solvers." width="100%">
+  <img src="docs/assets/hero.svg" alt="Helionyx: open-source hybrid renewable energy sizing for AI assistants. 8,760 hours simulated per design, search spaces of up to 50 million candidates, 22 MCP tools, 5 solvers." width="100%">
 </p>
 
 <p align="center">
@@ -103,7 +103,7 @@ sequenceDiagram
 | Solver | Method | Use it for | Licence and install |
 |---|---|---|---|
 | `native` | Full enumeration, 8,760-hour dispatch | The default; exact optimum of the search space | Built in |
-| `heuristic` | Seeded multi-start pattern search | Spaces above the enumeration limit (up to 50 million candidates) | Built in |
+| `heuristic` | Seeded multi-start pattern search | Spaces above the enumeration limit: up to 50 million candidates, sampled within a budget of 50 to 50,000 evaluations (default 4,000) | Built in |
 | `reopt` | MILP with perfect foresight (NREL REopt v3) | Cross-checking grid-connected designs | API key; load leaves the machine |
 | `microgridspy` | LP with HiGHS | Cross-checking off-grid designs | `helionyx-microgridspy`, EUPL-1.2 |
 | `sama` | Particle swarm | Cross-checking off-grid designs | `helionyx-sama`, AGPL-3.0 |
