@@ -145,6 +145,7 @@ reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
 | D17 | Installed pack releases override the bundled pack only when their CalVer is newer. | A stale download can never downgrade data. |
 | D18 | v0.2.0 ships with the placeholder `lk` pack data (marked `unverified`, HNX-W001). Verified values arrive as a data-pack release (`pack update`), no code release needed. | Verified tariff and cost data are not yet available; the pack release path (WP27) decouples data from code. |
 | D19 | Pilot users are simulated by scripted MCP sessions until real pilots are recruited. | Exercises the PRD §8 happy path and the five-minute target in CI. |
+| D20 | Multi-year runs simulate sample years and interpolate between them (default every 5 years, plus each stage boundary and the last year). | Simulating all 25 years would multiply run time by 25 for a sub-percent change in NPC. |
 
 ## 7. v1.0 release
 
@@ -153,8 +154,8 @@ v1.0 requirements in the SRS and the items deferred in §5.
 
 | WP | Work package | SRS / PRD refs | Status |
 |---|---|---|---|
-| WP33 | Annual load growth for multi-year analysis | FR-LOAD-009, F18 | Open |
-| WP34 | Multi-year capacity expansion with load growth | FR-OPT-007, F18 | Open |
+| WP33 | Annual load growth for multi-year analysis | FR-LOAD-009, F18 | Done (`multi_year.load_growth_rate`) |
+| WP34 | Multi-year capacity expansion with load growth | FR-OPT-007, F18 | Done (`multi_year.expansion`, up to 3 stages; native and heuristic solvers) |
 | WP35 | Pareto front and heuristic search promoted to Must: acceptance tests (no dominated point returned; heuristic within 1 % on every reference case) | FR-OPT-005, FR-OPT-006, F16, F17 | Code done in v0.2; tests to extend |
 | WP36 | OAuth 2.1 resource server with Microsoft Entra ID: protected resource metadata, issuer/audience/expiry checks, per-user data isolation; replaces `HNX_API_KEY` | IF-MCP-08, NFR-SEC-03, AT-10 | Open |
 | WP37 | `delete_scenario` and 90-day retention in hosted mode | FR-PRV-004 | Open |

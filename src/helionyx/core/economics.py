@@ -62,6 +62,12 @@ class CostItem:
     grid_sales_per_year: float = 0.0
     escalation_fuel: float = 0.0
     escalation_grid: float = 0.0
+    # Multi-year analysis (evaluate_years only): the item is bought at the start of project year
+    # install_year + 1, and fuel and grid flows may vary by year (index 0 = year 1, before escalation).
+    install_year: int = 0
+    fuel_by_year: list[float] | None = None
+    grid_purchases_by_year: list[float] | None = None
+    grid_sales_by_year: list[float] | None = None
 
 
 @dataclass
@@ -124,6 +130,74 @@ def evaluate(items: list[CostItem], i: float, n: int) -> EconomicsResult:
         by_type=by_type,
         cash_flows=[float(x) for x in cash],
     )
+
+
+def evaluate_years(items: list[CostItem], i: float, n: int) -> EconomicsResult:
+    """Year-by-year NPC for multi-year analysis (FR-LOAD-009, FR-OPT-007).
+
+    Each item starts at ``install_year`` (capital in that year's cash flow), is replaced every
+    lifetime after that and earns salvage for its remaining life at year ``n``. Fuel and grid
+    flows are taken per year when given, else constant. With every ``install_year`` at 0 and no
+    per-year flows the result equals :func:`evaluate`.
+    """
+    breakdown: dict[str, dict[str, float]] = {}
+    cash = np.zeros(n + 1)
+    disc = 1.0 / (1.0 + i) ** np.arange(n + 1)
+    years = np.arange(1, n + 1)
+    for it in items:
+        t0 = min(max(it.install_year, 0), n)
+        h = n - t0
+        bought = (it.capital > 0 or it.replacement_cost > 0) and h > 0
+        reps = [t0 + r for r in replacement_years(it.lifetime_years, h)] if bought else []
+        salv = salvage_value(it.capital, it.replacement_cost, it.lifetime_years, h) \
+            if math.isfinite(it.lifetime_years) and h > 0 else 0.0
+        active = (years > t0).astype(float)
+        om = it.om_per_year * active
+        esc_f = (1.0 + it.escalation_fuel) ** (years - 1)
+        esc_g = (1.0 + it.escalation_grid) ** (years - 1)
+        fuel = (np.asarray(it.fuel_by_year, dtype=float) if it.fuel_by_year is not None
+                else it.fuel_per_year * active) * esc_f
+        buy = (np.asarray(it.grid_purchases_by_year, dtype=float) if it.grid_purchases_by_year is not None
+               else it.grid_purchases_per_year * active) * esc_g
+        sell = (np.asarray(it.grid_sales_by_year, dtype=float) if it.grid_sales_by_year is not None
+                else it.grid_sales_per_year * active) * esc_g
+        parts = {
+            "capital": it.capital * disc[t0],
+            "replacement": sum(it.replacement_cost / (1.0 + i) ** y for y in reps),
+            "om": float(np.sum(om * disc[1:])),
+            "fuel": float(np.sum(fuel * disc[1:])),
+            "grid_purchases": float(np.sum(buy * disc[1:])),
+            "grid_sales": -float(np.sum(sell * disc[1:])),
+            "salvage": -salv * disc[n],
+        }
+        parts["total"] = sum(parts.values())
+        breakdown[it.name] = parts
+        cash[t0] += it.capital
+        cash[1:] += om + fuel + buy - sell
+        for ry in reps:
+            cash[min(n, max(1, math.ceil(ry - 1e-9)))] += it.replacement_cost
+        cash[n] -= salv
+
+    by_type = {k: sum(b[k] for b in breakdown.values())
+               for k in ("capital", "replacement", "om", "fuel", "grid_purchases", "grid_sales", "salvage")}
+    npc = sum(b["total"] for b in breakdown.values())
+    initial = sum(it.capital for it in items if it.install_year <= 0)
+    return EconomicsResult(
+        npc=npc,
+        annualised_cost=crf(i, n) * npc,
+        initial_capital=initial,
+        operating_cost_per_year=(npc - initial) * crf(i, n),
+        breakdown=breakdown,
+        by_type=by_type,
+        cash_flows=[float(x) for x in cash],
+    )
+
+
+def levelised_energy(energy_by_year: list[float], i: float) -> float:
+    """Annuity-equivalent energy: CRF × present value of the yearly energy (years 1..n)."""
+    n = len(energy_by_year)
+    pv = sum(e / (1.0 + i) ** y for y, e in enumerate(energy_by_year, start=1))
+    return crf(i, n) * pv
 
 
 def lcoe(annualised_cost: float, e_served_kwh: float, e_export_kwh: float) -> float | None:

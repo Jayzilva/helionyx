@@ -23,6 +23,20 @@ These decisions refine the SRS where it leaves details open (see
   its own fixed charge, applied when the month's consumption ends in that slab. This matches
   the CEB domestic structure with a single schema.
 
+- **D20 — Multi-year analysis** (FR-LOAD-009, FR-OPT-007). With `multi_year` in a scenario,
+  year *y* uses the year-1 load × (1 + g)^(y−1). Each expansion stage adds capacity from the
+  start of its year; its capital sits in year *y*−1 of the cash flow and it is replaced and
+  salvaged on its own lifetime. The engine simulates sample years (the first and last year of
+  each constant-capacity period, plus every `sample_every_years`-th year, default 5) and
+  interpolates fuel, grid bills, throughput and genset hours linearly between them; NPC is
+  then evaluated year by year. LCOE divides the annualised cost by the annuity-equivalent
+  energy. Battery and genset lifetimes use the mean throughput per kWh and mean run hours over
+  the years each bank is installed. Constraints (`max_capacity_shortage`,
+  `min_renewable_fraction`, `max_genset_hours`, `max_export_kw`) must hold in every sampled
+  year; `max_pv_kwp` applies to the final installed PV. With zero growth and no stages the
+  result equals the single-year calculation. REopt, MicroGridsPy and SAMA refuse multi-year
+  scenarios.
+
 Other conventions worth knowing:
 
 - An hour belongs to a TOU period or outage window when the window contains the hour's

@@ -52,6 +52,10 @@ from).** Helionyx results are pre-feasibility estimates, never final designs.
    modest (hundreds to a few thousand candidates). Above 50,000 candidates, full enumeration is
    refused; use `solver: "heuristic"` and tell the user the result is a heuristic search, quoting
    the number of evaluations from `get_results.search`.
+   For load growth or staged investment, add `multi_year` (`load_growth_rate`, and up to three
+   `expansion` stages with a `year` and lists such as `pv_add_kwp` / `bess_add_kwh`). Each
+   candidate then carries `multi_year.years` (sampled years); reliability constraints apply to
+   the worst year. Only `native` and `heuristic` solvers support it.
 6. `validate_scenario` → show assumptions and warnings → user confirms.
 7. `run_optimization` (optionally `wait_seconds: 15`), then `get_job_status` until `completed`.
 8. `get_results` (top 5) and `explain_run` (rank 1, `compare_to: "base"`).

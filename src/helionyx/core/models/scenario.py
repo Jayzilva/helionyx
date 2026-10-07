@@ -150,6 +150,25 @@ class OptionsInput(Strict):
     keep_timeseries_top_n: int | None = Field(None, ge=0, le=50)
 
 
+class ExpansionStageInput(Strict):
+    """Capacity added at the start of project year ``year`` (FR-OPT-007). Each list is searched."""
+
+    year: int = Field(ge=2, le=50)
+    pv_add_kwp: Sizes | None = None
+    wind_add_count: list[int] | None = None
+    bess_add_kwh: Sizes | None = None
+    genset_add_kw: Sizes | None = None
+
+
+class MultiYearInput(Strict):
+    """Multi-year analysis: load growth (FR-LOAD-009) and capacity expansion (FR-OPT-007)."""
+
+    load_growth_rate: float | None = Field(None, ge=-0.1, le=0.3, description="Annual growth of load energy")
+    sample_every_years: int | None = Field(None, ge=1, le=10, description=(
+        "Simulate every k-th year and interpolate between; stage years and the last year are always simulated"))
+    expansion: list[ExpansionStageInput] = Field(default_factory=list, max_length=3)
+
+
 class ScenarioInput(Strict):
     name: str = Field(max_length=256)
     site_id: str
@@ -161,6 +180,7 @@ class ScenarioInput(Strict):
     economics: EconomicsInput | None = None
     constraints: ConstraintsInput | None = None
     options: OptionsInput | None = None
+    multi_year: MultiYearInput | None = None
     seed: int | None = None
 
 
@@ -265,6 +285,20 @@ class ResolvedOptions(Strict):
     keep_timeseries_top_n: int
 
 
+class ResolvedExpansionStage(Strict):
+    year: int
+    pv_add_kwp: list[float]
+    wind_add_count: list[float]
+    bess_add_kwh: list[float]
+    genset_add_kw: list[float]
+
+
+class ResolvedMultiYear(Strict):
+    load_growth_rate: float
+    sample_every_years: int
+    expansion: list[ResolvedExpansionStage]
+
+
 class SiteRef(Strict):
     site_id: str
     name: str
@@ -294,6 +328,7 @@ class ResolvedScenario(Strict):
     options: ResolvedOptions
     seed: int
     pack: dict[str, str]
+    multi_year: ResolvedMultiYear | None = None
 
 
 class Assumption(BaseModel):

@@ -15,7 +15,7 @@ from helionyx.infra.db import now_iso
 from helionyx.infra.ids import new_id
 from helionyx.services.context import Helionyx, engine_version
 from helionyx.services.run import evaluate_sizes, optimise
-from helionyx.services.scenario import _Resolver, candidate_count, get_scenario, resolved_of
+from helionyx.services.scenario import _Resolver, candidate_count, get_scenario, resolved_of, size_axes
 
 ELASTICITY_STEP = 0.01
 
@@ -141,7 +141,7 @@ def _elasticity(app: Helionyx, doc: dict[str, Any], var: SweepVariable, base_bes
     sz = base_best["sizes"]
     for f in (1 - ELASTICITY_STEP, 1 + ELASTICITY_STEP):
         s = _resolve(app, _with_value(doc["input"], var.path, base_val * f))
-        rec = evaluate_sizes(app, s, [(sz["pv_kwp"], sz["wind_count"], sz["bess_kwh"], sz["genset_kw"])])[0]
+        rec = evaluate_sizes(app, s, [tuple(sz[k] for k in size_axes(s))])[0]
         npcs.append(rec["metrics"]["npc"])
     npc0 = base_best["metrics"]["npc"]
     return base_val, (((npcs[1] - npcs[0]) / npc0) / (2 * ELASTICITY_STEP) if npc0 else None)

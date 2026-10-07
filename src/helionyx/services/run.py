@@ -277,9 +277,13 @@ def _violations(s: ResolvedScenario, sz: dict[str, float], m: dict[str, Any]) ->
     return out
 
 
-def evaluate_sizes(app: Helionyx, s: ResolvedScenario, sizes: list[tuple[float, float, float, float]],
+def evaluate_sizes(app: Helionyx, s: ResolvedScenario, sizes: list[tuple[float, ...]],
                    progress: Any = None, base_index: int = 0, p_from: float = 0.0, p_to: float = 100.0,
                    ) -> list[dict[str, Any]]:
+    if s.multi_year is not None:
+        from helionyx.services import multiyear
+
+        return multiyear.evaluate_sizes(app, s, sizes, progress, base_index, p_from, p_to)
     inp = build_inputs(app, s)
     n = len(sizes)
     chunk = max(64, math.ceil(n / 20)) if n else 1
@@ -337,7 +341,8 @@ def _base_case(app: Helionyx, s: ResolvedScenario) -> dict[str, Any] | None:
     if bc is None:
         return None
     label, bsz = bc
-    base = evaluate_sizes(app, s, [bsz], base_index=-1)[0]
+    extra = len(size_axes(s)) - len(bsz)  # expansion stages add nothing to the base case
+    base = evaluate_sizes(app, s, [(*bsz, *([0.0] * extra))], base_index=-1)[0]
     base["label"] = label
     base["feasible"] = True
     base["metrics"].update(simple_payback_yr=None, discounted_payback_yr=None, irr_pct=None)
@@ -448,6 +453,10 @@ def start_run(app: Helionyx, scenario_id: str, solver: str = "native", sort_by: 
         raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION, f"Solver '{solver[:30]}' is not available.",
                             f"Use one of: {', '.join(SOLVERS)}.")
     s = resolved_of(doc)
+    if s.multi_year is not None and solver not in ("native", "heuristic"):
+        raise HelionyxError(ErrorCode.UNSUPPORTED_COMBINATION,
+                            f"Solver '{solver}' does not support multi-year analysis.",
+                            "Use solver='native' or 'heuristic', or remove multi_year from the scenario.")
     if solver == "native" and doc["candidate_count"] > s.options.max_candidates:
         raise HelionyxError(ErrorCode.SEARCH_SPACE_TOO_LARGE,
                             f"The search space has {doc['candidate_count']} candidates; enumeration is limited to "

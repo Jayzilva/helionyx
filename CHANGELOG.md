@@ -8,6 +8,15 @@ All notable changes to this project are documented here. The format follows
 
 Development started on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.md` §7.
 
+### Added
+
+- **Load growth** (FR-LOAD-009): `multi_year.load_growth_rate` scales year *y* load by
+  (1 + g)^(y−1).
+- **Capacity expansion** (FR-OPT-007): up to three `multi_year.expansion` stages, each adding
+  searched PV, wind, battery or genset capacity in a given year. Year-by-year economics
+  (`evaluate_years`), staged capital, per-bank replacement and salvage, and reliability
+  constraints checked in every sampled year. Results carry a `multi_year` block per candidate.
+
 ## [0.2.0] — 2026-10-07 — Validation
 
 Released with placeholder data: tariff rates, emission factors, fuel-curve defaults and LKR

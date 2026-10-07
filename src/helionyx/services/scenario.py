@@ -22,8 +22,10 @@ from helionyx.core.models.scenario import (
     ResolvedConstraints,
     ResolvedDispatch,
     ResolvedEconomics,
+    ResolvedExpansionStage,
     ResolvedGenset,
     ResolvedGrid,
+    ResolvedMultiYear,
     ResolvedOptions,
     ResolvedPv,
     ResolvedScenario,
@@ -386,6 +388,7 @@ class _Resolver:
             keep_timeseries_top_n=int(self.pick("options.keep_timeseries_top_n",
                                                 opts.keep_timeseries_top_n if opts else None)))
         seed = int(self.pick("seed", inp.seed))
+        multi_year = self._multi_year(comps, economics.project_life_years)
 
         site_ref = SiteRef(site_id=site["site_id"], name=site["name"], latitude=site["latitude"],
                            longitude=site["longitude"], elevation_m=float(site.get("elevation_m") or 0.0),
@@ -398,9 +401,46 @@ class _Resolver:
         resolved = ResolvedScenario(name=inp.name, site=site_ref, loads=loads, resource=resource, grid=grid,
                                     components=comps, dispatch=dispatch, economics=economics,
                                     constraints=constraints, options=options, seed=seed,
-                                    pack={pack.manifest.id: pack.manifest.version})
+                                    pack={pack.manifest.id: pack.manifest.version}, multi_year=multi_year)
         self._rules(resolved)
         return resolved
+
+    def _multi_year(self, comps: ResolvedComponents, life: int) -> ResolvedMultiYear | None:
+        """Load growth (FR-LOAD-009) and capacity expansion stages (FR-OPT-007)."""
+        m = self.inp.multi_year
+        if m is None:
+            return None
+        growth = float(self.pick("multi_year.load_growth_rate", m.load_growth_rate, system=(
+            0.0, "No load growth unless supplied")))
+        step = int(self.pick("multi_year.sample_every_years", m.sample_every_years, system=(
+            5, "Simulate every fifth year and interpolate between")))
+        stages: list[ResolvedExpansionStage] = []
+        owners = {"pv_add_kwp": comps.pv, "wind_add_count": comps.wind, "bess_add_kwh": comps.bess,
+                  "genset_add_kw": comps.genset}
+        for k, st in enumerate(sorted(m.expansion, key=lambda x: x.year)):
+            base = f"multi_year.expansion[{k}]"
+            if st.year > life:
+                self.errors.append(_err(ErrorCode.VALIDATION_FAILED, f"Expansion year {st.year} is after the "
+                                        f"project life of {life} years.", f"{base}.year"))
+            if stages and stages[-1].year == st.year:
+                self.errors.append(_err(ErrorCode.VALIDATION_FAILED, f"Two expansion stages in year {st.year}.",
+                                        f"{base}.year", "Merge them into one stage."))
+            adds: dict[str, list[float]] = {}
+            for key, owner in owners.items():
+                raw = getattr(st, key)
+                if raw is None:
+                    adds[key] = [0.0]
+                    continue
+                if owner is None:
+                    self.errors.append(_err(ErrorCode.VALIDATION_FAILED, f"{key} needs the matching component in "
+                                            "components.", f"{base}.{key}",
+                                            "Add the component to the scenario, or drop this addition."))
+                adds[key] = self.sizes(f"{base}.{key}", raw)
+            stages.append(ResolvedExpansionStage(year=st.year, **adds))
+        if comps.converter is None and any(x > 0 for s in stages for x in s.bess_add_kwh):
+            self.errors.append(_err(ErrorCode.VALIDATION_FAILED, "Battery expansion needs a converter.",
+                                    "multi_year.expansion"))
+        return ResolvedMultiYear(load_growth_rate=growth, sample_every_years=step, expansion=stages)
 
     # -------------------------------------------------------------- validation rules (FR-SCN-009, FR-CMP-004)
     def _rules(self, s: ResolvedScenario) -> None:
@@ -478,13 +518,20 @@ def _jsonable(v: Any) -> Any:
 
 
 def size_axes(s: ResolvedScenario) -> dict[str, list[float]]:
+    """Search axes: the initial system, then the additions of each expansion stage (FR-OPT-007)."""
     c = s.components
-    return {
+    axes = {
         "pv_kwp": c.pv.sizes_kwp if c.pv else [0.0],
         "wind_count": c.wind.counts if c.wind else [0.0],
         "bess_kwh": c.bess.sizes_kwh if c.bess else [0.0],
         "genset_kw": c.genset.sizes_kw if c.genset else [0.0],
     }
+    for st in s.multi_year.expansion if s.multi_year else []:
+        axes[f"pv_kwp_add_y{st.year}"] = st.pv_add_kwp
+        axes[f"wind_count_add_y{st.year}"] = st.wind_add_count
+        axes[f"bess_kwh_add_y{st.year}"] = st.bess_add_kwh
+        axes[f"genset_kw_add_y{st.year}"] = st.genset_add_kw
+    return axes
 
 
 def candidate_count(s: ResolvedScenario) -> int:
@@ -494,14 +541,15 @@ def candidate_count(s: ResolvedScenario) -> int:
     return n
 
 
-def enumerate_candidates(s: ResolvedScenario) -> list[tuple[float, float, float, float]]:
-    ax = size_axes(s)
-    return list(itertools.product(ax["pv_kwp"], ax["wind_count"], ax["bess_kwh"], ax["genset_kw"]))
+def enumerate_candidates(s: ResolvedScenario) -> list[tuple[float, ...]]:
+    return list(itertools.product(*size_axes(s).values()))
 
 
 def canonical_json(s: ResolvedScenario) -> str:
     """Canonical JSON of the inputs. Generated IDs are excluded; datasets enter through their content hashes."""
     data = s.model_dump(mode="json")
+    if data.get("multi_year") is None:
+        data.pop("multi_year", None)  # keeps single-year hashes unchanged
     data["site"].pop("site_id", None)
     for ref in [*data["loads"], data["resource"]]:
         ref.pop("dataset_id", None)
