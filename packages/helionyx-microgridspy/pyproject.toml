@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "helionyx-microgridspy"
-version = "0.3.0"
+version = "1.0.0.dev0"
 description = "MicroGridsPy cross-check adapter for Helionyx (separate package: MicroGridsPy is EUPL-1.2)"
 readme = "README.md"
 license = "EUPL-1.2"

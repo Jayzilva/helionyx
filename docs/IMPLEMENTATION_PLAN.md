@@ -161,7 +161,7 @@ v1.0 requirements in the SRS and the items deferred in §5.
 | WP37 | `delete_scenario` and 90-day retention in hosted mode | FR-PRV-004 | Open |
 | WP38 | Azure Container Apps deployment (TLS only, managed identity, Application Insights) | F19, IF-MCP-02 | Open |
 | WP39 | OpenTelemetry export for logs and per-run timing | NFR-OBS-01 | Open |
-| WP40 | Ecosystem packaging: MCP registry listing, PowerMCP contribution | F20 | Open |
+| WP40 | Ecosystem packaging: MCP registry listing, PowerMCP contribution | F20 | PyPI 0.3.0 published; server.json, glama.json, smithery.yaml ready; registry listing and PowerMCP open |
 | WP41 | Grounding checker v1.0 criteria (score 1.0, unmatched numbers flagged) and a full Sonnet transcript run | §9.5, FR-SKL-003 | Harness ready (Sonnet only, token budget) |
 | WP42 | Wind in the REopt and SAMA adapters; off-grid REopt mapping | FR-ADP-002, FR-ADP-004 | Open |
 | WP43 | DC-coupled PV–battery topology and micro-hydro | FR-SIM-010, F21 (Could) | Open |
