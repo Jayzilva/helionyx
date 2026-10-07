@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/helionyx/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/helionyx?color=0EA5E9"></a>
-  <a href="https://registry.modelcontextprotocol.io/v0/servers/io.github.Jayzilva%2Fhelionyx/versions/latest"><img alt="MCP Registry: io.github.Jayzilva/helionyx" src="https://img.shields.io/badge/MCP%20Registry-io.github.Jayzilva%2Fhelionyx-14B8A6"></a>
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Jayzilva/helionyx"><img alt="MCP Registry: io.github.Jayzilva/helionyx" src="https://img.shields.io/badge/MCP%20Registry-io.github.Jayzilva%2Fhelionyx-14B8A6"></a>
   <img alt="Python 3.11 to 3.13" src="https://img.shields.io/badge/python-3.11%E2%80%933.13-3776AB">
   <img alt="Apache 2.0 licence" src="https://img.shields.io/badge/licence-Apache%202.0-22C55E">
 </p>
@@ -43,7 +43,7 @@ of it. See the [Product Requirements Document](https://github.com/Jayzilva/helio
 |---|---|
 | Source code | [github.com/Jayzilva/helionyx](https://github.com/Jayzilva/helionyx) |
 | PyPI package | [pypi.org/project/helionyx](https://pypi.org/project/helionyx/) — `uvx helionyx serve` or `pip install helionyx` |
-| Official MCP Registry | Server name `io.github.Jayzilva/helionyx` — [registry entry (JSON)](https://registry.modelcontextprotocol.io/v0/servers/io.github.Jayzilva%2Fhelionyx/versions/latest), [search](https://registry.modelcontextprotocol.io/v0/servers?search=helionyx) |
+| Official MCP Registry | Server name `io.github.Jayzilva/helionyx` — [registry entry (JSON)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Jayzilva/helionyx) |
 
 MCP clients that read the official registry can install Helionyx by its server name. The
 registry has an API but no web page per server, so the links above return JSON.
