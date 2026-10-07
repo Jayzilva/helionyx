@@ -4,7 +4,7 @@
 |---|---|
 | **Scope** | v0.1: PRD F1–F9 plus the v0.1 "Should" items F10–F13. v0.2: PRD §10 Validation release (§6 below) |
 | **Source documents** | [`Helionyx-PRD.md`](../Helionyx-PRD.md), [`Helionyx-SRS.md`](../Helionyx-SRS.md) |
-| **Status** | v0.1 done (branch `feat/mvp-v0.1`); v0.2 code done, data and HOMER study open |
+| **Status** | v0.1 done (branch `feat/mvp-v0.1`); v0.2.0 released 7 October 2026 with placeholder data; HOMER parity study deferred |
 | **Last updated** | 7 October 2026 |
 
 This plan turns the PRD and SRS into an ordered build. It records the
@@ -128,11 +128,11 @@ reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
 | WP25 | `helionyx-microgridspy` package (EUPL-1.2), LP with HiGHS | FR-ADP-003 | Done — live runs on RC-1, RC-2 and RC-3 (SRS AC: RC-1 and RC-3) |
 | WP26 | `helionyx-sama` package (AGPL-3.0), particle swarm | FR-ADP-004 | Done — live run on RC-3 agrees with MicroGridsPy within 0.1 % of NPC (docs/adapters.md) |
 | WP27 | Data-pack releases: `pack build`, checksum-verified `pack update` | §6.2 | Done |
-| WP28 | HOMER parity kit: protocol, template, `helionyx parity compare` | F15, §9.4 | Tooling done; **HOMER results pending (needs HOMER Pro access, PRD Q3)** |
+| WP28 | HOMER parity kit: protocol, template, `helionyx parity compare` | F15, §9.4 | Tooling done; **study deferred** — no HOMER Pro access (PRD Q3) |
 | WP29 | REopt adapter hardening and live verification | FR-ADP-002 (Must in v0.2) | Done |
-| WP30 | Grounding transcript harness | FR-SKL-003 | Done; run pending credentials |
+| WP30 | Grounding transcript harness | FR-SKL-003 | Done; live run deferred (needs Anthropic API credentials and budget) |
 | WP31 | Interim HTTP bearer-key auth | NFR-SEC-03 (interim) | Done |
-| — | Two pilot users (one EPC, one planner) | PRD §10 | Not a code task — open |
+| WP32 | Mock pilot users (one EPC, one planner) replaying their user stories over MCP | PRD §10, §9 usability | Done (`tests/test_pilot_mock.py`); real pilots still to recruit |
 
 ### v0.2 implementation decisions
 
@@ -143,3 +143,5 @@ reports, two pilot users. Plus the v0.2 "Must/Should" requirements in the SRS.
 | D15 | Money sent to REopt and SAMA is divided by a currency scale (FX rate, else 300) and scaled back. | REopt range-checks USD magnitudes; SAMA's penalty weights assume USD. Linear costs make the optimum scale-invariant. |
 | D16 | Enumeration limits move from `create_scenario` to `run_optimization`; scenarios up to 50 million candidates are accepted for the heuristic. | FR-OPT-005 needs scenarios larger than `max_candidates`. |
 | D17 | Installed pack releases override the bundled pack only when their CalVer is newer. | A stale download can never downgrade data. |
+| D18 | v0.2.0 ships with the placeholder `lk` pack data (marked `unverified`, HNX-W001). Verified values arrive as a data-pack release (`pack update`), no code release needed. | Verified tariff and cost data are not yet available; the pack release path (WP27) decouples data from code. |
+| D19 | Pilot users are simulated by scripted MCP sessions until real pilots are recruited. | Exercises the PRD §8 happy path and the five-minute target in CI. |

@@ -4,7 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/). Data packs use CalVer (`YYYY.MM.patch`).
 
-## [Unreleased] — 0.2.0 (Validation)
+## [0.2.0] — 2026-10-07 — Validation
+
+Released with placeholder data: tariff rates, emission factors, fuel-curve defaults and LKR
+component costs in the `lk` pack are still marked `unverified` (HNX-W001). The HOMER parity
+study and the live grounding-evaluation run are deferred; pilot feedback comes from mock
+pilot users.
 
 ### Added
 
@@ -32,6 +37,9 @@ All notable changes to this project are documented here. The format follows
   against the PRD targets (`reference_cases/homer_parity/`).
 - **Grounding transcript harness**: `evals/grounding/run_eval.py` runs the 30 prompts through
   Claude with the Helionyx tools and writes transcripts for `helionyx eval grounding`.
+- **Mock pilot users** (`tests/test_pilot_mock.py`): an EPC engineer (P1) and a planner (P4)
+  replay their user stories over MCP and check the PRD target of ranked results within five
+  minutes.
 - **Bearer-key authentication for HTTP mode** (`HNX_API_KEY`, development only); the CLI
   refuses a non-local bind without it.
 

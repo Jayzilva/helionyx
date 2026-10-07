@@ -17,6 +17,7 @@
 | 0.1 | 7 October 2026 | Initial draft. |
 | 0.1.1 | 7 October 2026 | MVP implementation started. The build plan, implementation decisions and open data items are tracked in [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). No scope changes. |
 | 0.2 | 7 October 2026 | v0.2 Validation code delivered (plan §6). Licence finding: MicroGridsPy (EUPL-1.2) joins SAMA (AGPL-3.0) as a separately distributed adapter package (§13). HOMER parity tooling ready; the study itself still needs HOMER Pro access (Q3) and the pilot users are still to be recruited. |
+| 0.2.1 | 7 October 2026 | v0.2.0 released with placeholder `lk` data (marked unverified). HOMER parity study deferred until HOMER Pro access is available (Q3). Pilot users simulated by scripted mock sessions (EPC and planner) until real pilots are recruited. |
 
 ---
 

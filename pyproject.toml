@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "helionyx"
-version = "0.2.0.dev0"
+version = "0.2.0"
 description = "Open-source hybrid renewable energy sizing for AI assistants (MCP server, CLI and Claude skill)"
 readme = "README.md"
 license = "Apache-2.0"
