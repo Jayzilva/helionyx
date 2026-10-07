@@ -1,6 +1,6 @@
 # HOMER Pro parity study (v0.2)
 
-Kit for the parity study in SRS §9.4 and PRD feature F15. The study itself needs a HOMER Pro
+Kit for a parity study against HOMER Pro. The study itself needs a HOMER Pro
 licence (student or academic) and is run by hand; this folder holds the inputs, the
 results template and the comparison tool.
 
@@ -28,17 +28,17 @@ results template and the comparison tool.
    helionyx parity compare reference_cases/homer_parity/homer_results.csv --output reference_cases/homer_parity/report.md
    ```
 
-   The report shows each metric against the PRD targets: NPC and LCOE within ±10 %, renewable
+   The report shows each metric against these targets: NPC and LCOE within ±10 %, renewable
    fraction within ±5 percentage points. Fuel, excess and unmet load are reported without a target.
 5. For every difference beyond a target, find the cause and write it up, starting from the
    documented differences in `hnx://docs/methodology` §11 (dispatch priority, no operating reserve,
    idealised battery, single genset, hourly step, AC coupling).
 6. Publish the filled CSV, the report and the analysis here and in the paper.
 
-The targets are a hypothesis to test, not a release gate (PRD §9). A divergence that is
+The targets are a hypothesis to test, not a release gate. A divergence that is
 understood and explained is a valid result.
 
 ## Status
 
 The tooling, inputs and template are ready. HOMER Pro results have not been entered yet:
-they need HOMER Pro access (PRD open question Q3).
+they need HOMER Pro access.

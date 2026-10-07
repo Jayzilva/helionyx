@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="t d">
+  <title id="t">Hourly energy balance in Helionyx</title>
+  <desc id="d">Each hour, PV and wind serve the load first. Surplus charges the battery, then is exported or recorded as excess. A deficit is met by the battery, then the grid when available and cheaper, then the diesel genset; anything left is unmet load. Each hour's balance closes to within 0.001 kWh.</desc>
+  <rect width="1200" height="520" rx="20" fill="#0B1220"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="48" y="58" font-size="28" font-weight="700" fill="#F8FAFC">One hour of dispatch, 8,760 times a year</text>
+    <text x="48" y="88" font-size="16" fill="#94A3B8">Renewables serve the load first; storage, grid and diesel fill the gap in a fixed priority. Energy balance error per hour ≤ 0.001 kWh.</text>
+
+    <!-- sources -->
+    <rect x="48" y="128" width="230" height="80" rx="14" fill="#1E293B" stroke="#F59E0B" stroke-width="2"/>
+    <text x="70" y="162" font-size="19" font-weight="700" fill="#FCD34D">Solar PV</text>
+    <text x="70" y="188" font-size="14" fill="#CBD5E1">pvlib, temperature, inverter</text>
+    <rect x="48" y="224" width="230" height="80" rx="14" fill="#1E293B" stroke="#38BDF8" stroke-width="2"/>
+    <text x="70" y="258" font-size="19" font-weight="700" fill="#7DD3FC">Wind</text>
+    <text x="70" y="284" font-size="14" fill="#CBD5E1">Power curve, hub height</text>
+    <rect x="48" y="320" width="230" height="80" rx="14" fill="#1E293B" stroke="#A78BFA" stroke-width="2"/>
+    <text x="70" y="354" font-size="19" font-weight="700" fill="#C4B5FD">Grid</text>
+    <text x="70" y="380" font-size="14" fill="#CBD5E1">TOU prices, outage mask</text>
+    <rect x="48" y="416" width="230" height="80" rx="14" fill="#1E293B" stroke="#F87171" stroke-width="2"/>
+    <text x="70" y="450" font-size="19" font-weight="700" fill="#FCA5A5">Diesel genset</text>
+    <text x="70" y="476" font-size="14" fill="#CBD5E1">Fuel curve, minimum load</text>
+
+    <!-- AC bus -->
+    <rect x="470" y="128" width="40" height="368" rx="12" fill="#334155"/>
+    <text x="490" y="318" font-size="15" font-weight="700" fill="#F8FAFC" text-anchor="middle" transform="rotate(-90 490 318)">AC BUS</text>
+
+    <!-- load -->
+    <rect x="700" y="128" width="220" height="90" rx="14" fill="#14532D" stroke="#22C55E" stroke-width="2"/>
+    <text x="722" y="164" font-size="19" font-weight="700" fill="#BBF7D0">Load</text>
+    <text x="722" y="192" font-size="14" fill="#DCFCE7">Archetypes or measured data</text>
+    <!-- battery -->
+    <rect x="700" y="246" width="220" height="90" rx="14" fill="#1E293B" stroke="#14B8A6" stroke-width="2"/>
+    <text x="722" y="282" font-size="19" font-weight="700" fill="#5EEAD4">Battery</text>
+    <text x="722" y="310" font-size="14" fill="#CBD5E1">Efficiency, SOC limits, reserve</text>
+    <!-- export / excess / unmet -->
+    <rect x="700" y="364" width="220" height="132" rx="14" fill="#1E293B" stroke="#475569" stroke-width="2"/>
+    <text x="722" y="398" font-size="17" font-weight="700" fill="#E2E8F0">Leftovers</text>
+    <text x="722" y="426" font-size="14" fill="#CBD5E1">Export (net metering/</text>
+    <text x="722" y="446" font-size="14" fill="#CBD5E1">accounting/plus), excess,</text>
+    <text x="722" y="466" font-size="14" fill="#FCA5A5">unmet load (shortage)</text>
+  </g>
+  <!-- flows -->
+  <g stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M280 168 H466" stroke="#F59E0B"/>
+    <path d="M280 264 H466" stroke="#38BDF8"/>
+    <path d="M280 360 H466" stroke="#A78BFA"/>
+    <path d="M280 456 H466" stroke="#F87171"/>
+    <path d="M514 172 H694" stroke="#22C55E"/>
+    <path d="M514 284 H694" stroke="#14B8A6"/>
+    <path d="M694 300 H514" stroke="#14B8A6" stroke-dasharray="2 10"/>
+    <path d="M514 430 H694" stroke="#64748B"/>
+  </g>
+  <g fill="#22C55E"><path d="M696 172 l-12 -8 v16 z"/></g>
+  <g fill="#14B8A6"><path d="M696 284 l-12 -8 v16 z"/></g>
+  <g fill="#64748B"><path d="M696 430 l-12 -8 v16 z"/></g>
+  <!-- priority panel -->
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="952" y="128" width="200" height="368" rx="14" fill="#0F172A" stroke="#334155" stroke-width="2"/>
+    <text x="972" y="160" font-size="16" font-weight="700" fill="#F8FAFC">Deficit order</text>
+    <g font-size="14" fill="#CBD5E1">
+      <circle cx="984" cy="190" r="12" fill="#14B8A6"/><text x="984" y="195" text-anchor="middle" fill="#0B1220" font-weight="700">1</text><text x="1004" y="195">Battery</text>
+      <circle cx="984" cy="226" r="12" fill="#A78BFA"/><text x="984" y="231" text-anchor="middle" fill="#0B1220" font-weight="700">2</text><text x="1004" y="231">Grid, if available</text>
+      <circle cx="984" cy="262" r="12" fill="#F87171"/><text x="984" y="267" text-anchor="middle" fill="#0B1220" font-weight="700">3</text><text x="1004" y="267">Diesel genset</text>
+      <circle cx="984" cy="298" r="12" fill="#475569"/><text x="984" y="303" text-anchor="middle" fill="#F8FAFC" font-weight="700">4</text><text x="1004" y="303">Unmet load</text>
+    </g>
+    <text x="972" y="350" font-size="16" font-weight="700" fill="#F8FAFC">Surplus order</text>
+    <g font-size="14" fill="#CBD5E1">
+      <circle cx="984" cy="380" r="12" fill="#14B8A6"/><text x="984" y="385" text-anchor="middle" fill="#0B1220" font-weight="700">1</text><text x="1004" y="385">Charge battery</text>
+      <circle cx="984" cy="416" r="12" fill="#A78BFA"/><text x="984" y="421" text-anchor="middle" fill="#0B1220" font-weight="700">2</text><text x="1004" y="421">Export</text>
+      <circle cx="984" cy="452" r="12" fill="#475569"/><text x="984" y="457" text-anchor="middle" fill="#F8FAFC" font-weight="700">3</text><text x="1004" y="457">Excess</text>
+    </g>
+    <text x="972" y="484" font-size="12" fill="#64748B">On grid: battery at peak only</text>
+  </g>
+</svg>

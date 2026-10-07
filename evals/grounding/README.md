@@ -1,6 +1,6 @@
 # Grounding evaluation
 
-Checks that numbers in assistant answers trace back to Helionyx tool outputs (SRS §9.5).
+Checks that numbers in assistant answers trace back to Helionyx tool outputs.
 
 1. Run each prompt in `prompts.yaml` in a client with the Helionyx skill and MCP server.
 2. Save every conversation as one JSON file in `transcripts/` using the format in

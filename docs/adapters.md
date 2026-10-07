@@ -2,7 +2,7 @@
 
 Helionyx's own engine enumerates candidate designs and simulates each one with a rule-based
 hourly dispatch. Three other solvers can size the same scenario so the answers can be
-cross-checked with `compare_runs` (FR-ADP-001…005):
+cross-checked with `compare_runs`:
 
 | Solver | `solver` value | Method | Licence | How it runs |
 |---|---|---|---|---|
@@ -14,14 +14,26 @@ cross-checked with `compare_runs` (FR-ADP-001…005):
 
 ## Licence isolation
 
-MicroGridsPy (EUPL-1.2) and SAMAPy (AGPL-3.0) are copyleft. The SRS assumed only SAMA was;
-checking the licences (SRS Appendix A, V5) showed both are. Each therefore ships as its own
+MicroGridsPy (EUPL-1.2) and SAMAPy (AGPL-3.0) are copyleft. Each therefore ships as its own
 package under `packages/`, carrying the solver's licence, and runs as a separate program.
 The Apache-2.0 core never imports either solver; a test enforces this. If you run Helionyx as
 a network service with `helionyx-sama` installed, the AGPL network clause applies to that
 package and SAMAPy.
 
 ## Subprocess protocol (`helionyx-adapter-io/1`)
+
+```mermaid
+sequenceDiagram
+    participant H as Helionyx core (Apache-2.0)
+    participant F as input.json / output.json
+    participant A as Adapter process (EUPL or AGPL)
+    H->>F: write scenario: hourly load, PV and wind per unit, prices, costs, limits
+    H->>A: <command> run input.json output.json
+    A->>A: build and solve (HiGHS LP or particle swarm)
+    A->>F: write sizes, metrics, status
+    H->>F: read output.json
+    H->>H: store as a run, comparable with compare_runs
+```
 
 ```text
 <command> run <input.json> <output.json>

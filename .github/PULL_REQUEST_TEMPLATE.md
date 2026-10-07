@@ -1,6 +1,6 @@
 ## What and why
 
-<!-- Link the issue or SRS/PRD item. -->
+<!-- Link the issue this addresses. -->
 
 ## Checks
 

@@ -37,7 +37,7 @@ helionyx pack validate src/helionyx/packs/lk
 - No country-specific literals (utility names, tariff codes, costs) in engine code; they
   belong in data packs.
 - Every numeric output field carries its unit in its name or a `units` map.
-- Errors use `HelionyxError` with a code from SRS §4.6 and an actionable hint.
+- Errors use `HelionyxError` with a code from `helionyx.errors.ErrorCode` and an actionable hint.
 - The server never calls an LLM.
 
 ## Data-pack contributions

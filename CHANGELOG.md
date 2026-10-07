@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased] — 1.0.0
 
-Development continues on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.md` §7.
+Development continues on branch `feat/v1.0`.
 
 ### Added
 
@@ -14,9 +14,18 @@ Development continues on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.
   Claude Desktop and for Smithery, which now takes MCPB bundles or remote URLs. Listed on
   Smithery as `gitdevjay/helionyx`; `scripts/build_mcpb.py` builds both bundles.
 
+### Changed
+
+- Documentation reorganised for users: new README introduction and install table (Claude
+  Code, Claude Desktop bundle, Smithery, any MCP client), getting-started and hourly
+  energy-flow infographics, and diagrams in the quickstart, methodology, data-pack guide,
+  skill guide and adapter guide.
+
 ### Removed
 
 - `smithery.yaml`: Smithery no longer builds servers from a repository configuration.
+- Internal planning documents (requirements, specification, implementation plan) are no longer
+  part of the public repository.
 
 ## [0.3.0] — 2026-10-07 — Multi-year and packaging
 
@@ -69,11 +78,11 @@ pilot users.
 - **Data-pack releases** : `helionyx pack build` and `helionyx pack update` (SHA-256 verified,
   newer CalVer installs override the bundled pack).
 - **HOMER parity kit** (F15): protocol, results template and `helionyx parity compare`
-  against the PRD targets (`reference_cases/homer_parity/`).
+  against the parity targets (`reference_cases/homer_parity/`).
 - **Grounding transcript harness**: `evals/grounding/run_eval.py` runs the 30 prompts through
   Claude with the Helionyx tools and writes transcripts for `helionyx eval grounding`.
 - **Mock pilot users** (`tests/test_pilot_mock.py`): an EPC engineer (P1) and a planner (P4)
-  replay their user stories over MCP and check the PRD target of ranked results within five
+  replay their user stories over MCP and check the target of ranked results within five
   minutes.
 - **Bearer-key authentication for HTTP mode** (`HNX_API_KEY`, development only); the CLI
   refuses a non-local bind without it.

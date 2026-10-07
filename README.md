@@ -11,61 +11,80 @@
 
 # Helionyx
 
-Helionyx is a Model Context Protocol (MCP) server, command-line interface and Claude
-skill that sizes hybrid systems (solar PV, wind, battery storage, diesel generator and
-utility grid) through conversation with an AI assistant. It reproduces the core HOMER
-Pro workflow with open-source engines that need no licence:
+**Size hybrid energy systems by talking to your AI assistant.** Helionyx is an open-source
+Model Context Protocol (MCP) server that sizes solar PV, wind, battery storage, diesel
+generator and grid-connected systems. It runs the classic techno-economic workflow:
 
-1. simulate every candidate design hour by hour for a year;
-2. discard designs that break constraints;
-3. rank the rest by net present cost (NPC).
+1. simulate every candidate design hour by hour for a full year;
+2. discard designs that break your constraints;
+3. rank the rest by net present cost (NPC), with payback, LCOE, bills and emissions.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Jayzilva/helionyx/main/docs/assets/how-it-works.svg" alt="How a run works: describe the site, load and tariff; simulate every candidate for 8,760 hours; filter out designs that break constraints; rank the rest by NPC and explain them with a run ID." width="100%">
 </p>
 
-The assistant never produces numbers itself. It asks scoping questions, calls
-deterministic tools and explains the results. Every figure comes from a solver run
-and carries a run ID that anyone can reproduce.
+The assistant never invents numbers. It asks scoping questions, calls deterministic tools and
+explains the results; every figure comes from a solver run with a run ID that anyone can
+reproduce. Use it for pre-feasibility studies, client proposals, rural electrification
+planning, teaching and cross-checking other tools.
 
-Helionyx ships with a Sri Lankan country pack (`lk`): CEB and LECO tariff structures
-and export schemes, alignment of UTC weather data to Asia/Colombo (UTC+05:30), grid
-outage modelling and load archetypes for Sri Lankan building types. The engine is
-country-agnostic; other countries can be added as data packs.
+**Why Helionyx**
 
-Helionyx is a **pre-feasibility and teaching tool that complements HOMER**, not a clone
-of it. See the [Product Requirements Document](https://github.com/Jayzilva/helionyx/blob/main/Helionyx-PRD.md) and the
-[Software Requirements Specification](https://github.com/Jayzilva/helionyx/blob/main/Helionyx-SRS.md).
+- **Grounded answers:** the solver produces every number; the assistant only explains them.
+- **Complete method:** hourly dispatch (load following, cycle charging, TOU grid strategy),
+  life-cycle economics, tariffs with TOU, demand charges and export schemes, grid outages.
+- **Beyond a single answer:** sensitivity grids, Pareto trade-offs between cost, CO₂ and
+  reliability, multi-year load growth with staged expansion.
+- **Cross-checked:** compare against REopt, MicroGridsPy and SAMA from the same scenario.
+- **Open and local:** Apache-2.0, runs on your machine, works offline with bundled data, exports
+  HOMER-ready time series and Excel reports.
+
+## Get started
+
+Pick the way you use AI tools. Each one takes about a minute.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Jayzilva/helionyx/main/docs/assets/getting-started.svg" alt="Three ways to install: Claude Code with one command, Claude Desktop with a one-click bundle, or any MCP client with uvx helionyx serve. Then ask for a design." width="100%">
+</p>
+
+| Client | Install |
+|---|---|
+| **Claude Code** | `claude mcp add helionyx -- uvx helionyx serve` |
+| **Claude Desktop** | Download [`helionyx-…-claude-desktop.mcpb`](https://github.com/Jayzilva/helionyx/releases/latest) from the latest release and open it |
+| **Smithery** | [smithery.ai/servers/gitdevjay/helionyx](https://smithery.ai/servers/gitdevjay/helionyx) |
+| **Any MCP client** (stdio) | Command `uvx`, arguments `helionyx serve` ([uv](https://docs.astral.sh/uv/) required) |
+| **Python** | `pip install helionyx`, then `helionyx serve` |
+
+Then ask, for example:
+
+> Size a PV and battery system for a 60-room hotel in Negombo on the CEB hotel tariff. We have
+> about 1,200 m² of usable roof.
+
+The [quickstart](https://github.com/Jayzilva/helionyx/blob/main/docs/quickstart.md) walks through a first study in under ten minutes.
 
 ## Where to find Helionyx
 
 | Where | Link |
 |---|---|
-| Source code | [github.com/Jayzilva/helionyx](https://github.com/Jayzilva/helionyx) |
-| PyPI package | [pypi.org/project/helionyx](https://pypi.org/project/helionyx/) — `uvx helionyx serve` or `pip install helionyx` |
+| Source code and releases | [github.com/Jayzilva/helionyx](https://github.com/Jayzilva/helionyx) · [releases](https://github.com/Jayzilva/helionyx/releases) |
+| PyPI | [pypi.org/project/helionyx](https://pypi.org/project/helionyx/) |
 | Smithery | [smithery.ai/servers/gitdevjay/helionyx](https://smithery.ai/servers/gitdevjay/helionyx) |
-| Official MCP Registry | Server name `io.github.Jayzilva/helionyx` — [registry entry (JSON)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Jayzilva/helionyx) |
+| Official MCP Registry | `io.github.Jayzilva/helionyx` ([registry entry, JSON](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Jayzilva/helionyx)) |
 
-MCP clients that read the official registry can install Helionyx by its server name. The
-registry has an API but no web page per server, so the links above return JSON.
+## Data and accuracy
 
-## Status
+Helionyx ships with a Sri Lankan country pack (`lk`): CEB and LECO tariff structures and export
+schemes, weather alignment to Asia/Colombo time, grid outage patterns and load archetypes for
+Sri Lankan buildings. The engine itself is country-agnostic; new countries are added as data
+packs ([data-pack guide](https://github.com/Jayzilva/helionyx/blob/main/docs/data-pack-guide.md)).
 
-| Release | State | Highlights |
-|---|---|---|
-| v0.1 MVP | Released | Engine, MCP server, CLI, Claude skill, `lk` pack, reference cases |
-| v0.2.0 Validation | Released 7 October 2026 | Cross-check solvers, heuristic and Pareto search, two-variable sensitivity, Excel reports, HOMER parity kit |
-| v0.3.0 | Released 7 October 2026 | Multi-year load growth and capacity expansion; PyPI and MCP Registry packaging |
-| v1.0 | **In development** | Hosted mode with Entra ID, retention, OpenTelemetry, ecosystem packaging (planned) |
+> **The tariff rates, component costs, fuel price, discount rates and emission factors in the
+> `lk` pack are unverified placeholders.** Use results to learn the tool and to compare
+> options, not for real decisions, until the data is verified. `validate_scenario` raises
+> warning HNX-W001 for every unverified tariff. See the [disclaimer](https://github.com/Jayzilva/helionyx/blob/main/DISCLAIMER.md).
 
-> **The tariff rates, component costs, fuel price, discount rates and emission factors in
-> the `lk` pack are unverified placeholders.** They exist so the software can be built
-> and tested. Do not use the results for real decisions until a maintainer has verified
-> the data (SRS Appendix A, items V3, V8 and V9). `validate_scenario` raises warning
-> HNX-W001 for every unverified tariff.
-
-See [docs/IMPLEMENTATION_PLAN.md](https://github.com/Jayzilva/helionyx/blob/main/docs/IMPLEMENTATION_PLAN.md) for the build plan,
-implementation decisions and open items.
+Releases and changes are listed in the [changelog](https://github.com/Jayzilva/helionyx/blob/main/CHANGELOG.md). Hosted mode with Microsoft
+Entra ID sign-in and OpenTelemetry monitoring are in development for 1.0.
 
 ## Architecture
 
@@ -181,34 +200,20 @@ See [the methodology](https://github.com/Jayzilva/helionyx/blob/main/docs/method
 - **HOMER parity kit:** protocol, results template and `helionyx parity compare`.
 - **Claude skill and MCP prompts** for guided workflows, plus a grounding checker.
 
-## Install
+## Install from source
 
-Helionyx needs Python 3.11–3.13.
-
-```bash
-# run without installing (recommended for MCP clients)
-uvx helionyx serve
-
-# or install from PyPI
-pip install helionyx
-```
-
-From source, for development:
+For development (Python 3.11–3.13):
 
 ```bash
-git clone https://github.com/Jayzilva/helionyx.git helionyx
+git clone https://github.com/Jayzilva/helionyx.git
 cd helionyx
-
-# with uv
 uv venv
-uv pip install -e ".[dev]"
-
-# or with pip
-python -m venv .venv
-.venv/bin/pip install -e ".[dev]"      # Windows: .venv\Scripts\pip install -e ".[dev]"
+uv pip install -e ".[dev]"      # or: python -m venv .venv, then pip install -e ".[dev]"
 ```
 
-## Quickstart
+See [CONTRIBUTING](https://github.com/Jayzilva/helionyx/blob/main/CONTRIBUTING.md) for the checks to run before a pull request.
+
+## Command-line quickstart
 
 Run a reference case from the command line (works offline):
 
@@ -232,27 +237,16 @@ claude mcp add helionyx -- uvx helionyx serve
 
 ### Claude Desktop
 
-Add this to `claude_desktop_config.json`:
+Download the `.mcpb` bundle from the [latest release](https://github.com/Jayzilva/helionyx/releases/latest) and open it; Claude
+Desktop installs Helionyx and asks for the optional settings (workspace folder, offline
+mode, REopt API key). Or add this to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "helionyx": {
-      "command": "helionyx",
-      "args": ["serve"]
-    }
-  }
-}
-```
-
-If `helionyx` is not on your `PATH`, use uv instead:
-
-```json
-{
-  "mcpServers": {
-    "helionyx": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/helionyx", "helionyx", "serve"]
+      "command": "uvx",
+      "args": ["helionyx", "serve"]
     }
   }
 }
@@ -386,7 +380,7 @@ reference_cases/  RC-1 to RC-3 study files
 evals/grounding/  grounding evaluation prompt set
 scripts/          maintainer scripts (refresh bundled samples)
 tests/            unit, property, contract and regression tests
-docs/             quickstart, methodology, data-pack guide, skill guide, implementation plan, assets/ (README graphics)
+docs/             quickstart, methodology, data-pack guide, skill guide, solver adapters, assets/ (graphics)
 ```
 
 ## Documentation
@@ -396,7 +390,7 @@ docs/             quickstart, methodology, data-pack guide, skill guide, impleme
 - [Data-pack guide](https://github.com/Jayzilva/helionyx/blob/main/docs/data-pack-guide.md)
 - [Skill guide](https://github.com/Jayzilva/helionyx/blob/main/docs/skill-guide.md)
 - [Solver adapters](https://github.com/Jayzilva/helionyx/blob/main/docs/adapters.md)
-- [Implementation plan](https://github.com/Jayzilva/helionyx/blob/main/docs/IMPLEMENTATION_PLAN.md)
+- [Releases](https://github.com/Jayzilva/helionyx/releases)
 - [Contributing](https://github.com/Jayzilva/helionyx/blob/main/CONTRIBUTING.md) · [Changelog](https://github.com/Jayzilva/helionyx/blob/main/CHANGELOG.md)
 
 ## Licence

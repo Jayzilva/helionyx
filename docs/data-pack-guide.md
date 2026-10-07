@@ -5,10 +5,24 @@ and default lives in a **country pack**. Sri Lanka (`lk`) is the first pack.
 
 > **Warning.** The current `lk` tariff rates, component costs, fuel price, discount and
 > inflation rates and emission factors are **unverified placeholders** for development
-> and testing. They must be replaced with sourced values before any real use (SRS
-> Appendix A: V3 tariffs and export schemes, V8 emission factors, V9 genset fuel curves;
-> component costs need a market survey). Records carry `status: unverified` and say
+> and testing. They must be replaced with sourced values before any real use (tariffs and export
+> schemes, emission factors and genset fuel curves from official sources; component costs
+> from a market survey). Records carry `status: unverified` and say
 > "PLACEHOLDER" in their source text.
+
+## How pack data reaches a result
+
+```mermaid
+flowchart LR
+    P["Country pack<br/>tariffs · components · archetypes<br/>emissions · defaults"] --> R["Scenario resolver"]
+    U["Your inputs"] --> R
+    R --> A["Assumption audit<br/>value · origin · source · date"]
+    R --> E["Engine and bill"]
+    A --> W["Warnings<br/>HNX-W001 unverified or stale data"]
+```
+
+Every value the user does not supply comes from the pack and is listed with its source and
+date by `validate_scenario`, so a reviewer can see exactly what was assumed.
 
 ## Layout
 
@@ -60,7 +74,16 @@ Component `technical` blocks are validated per type (`PvTechnical`, `WindTechnic
 `BessTechnical`, `GensetTechnical`, `ConverterTechnical`); any field can be overridden in a
 scenario under `components.<type>.overrides`.
 
-## Adding a tariff revision (US-12, AT-12)
+## Adding a tariff revision
+
+```mermaid
+flowchart LR
+    N["Utility publishes<br/>new rates"] --> C["Copy current file<br/>H2@2026-07-01.yaml"]
+    C --> F["Fill rates, periods,<br/>export schemes, source"]
+    F --> V["helionyx pack validate"]
+    V --> X["Second person checks<br/>status: verified"]
+    X --> B["Bump pack version<br/>and release"]
+```
 
 1. Copy the current file, for example `tariffs/ceb/H2@2025-01-01.yaml`, to a new file named
    `<category>@<effective_from>.yaml`, e.g. `tariffs/ceb/H2@2026-07-01.yaml`.
@@ -115,4 +138,4 @@ downloads. Changing them changes regression results, so regenerate the goldens a
 ## Adding a new country
 
 Create `src/helionyx/packs/<code>/` with the same layout and schemas. Engine code must not
-contain country-specific literals (NFR-MAINT-02); sites select a pack with `country_pack`.
+contain country-specific literals; sites select a pack with `country_pack`.

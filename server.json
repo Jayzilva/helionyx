@@ -7,6 +7,7 @@
     "url": "https://github.com/Jayzilva/helionyx",
     "source": "github"
   },
+  "websiteUrl": "https://github.com/Jayzilva/helionyx",
   "version": "0.3.0",
   "packages": [
     {
@@ -15,13 +16,31 @@
       "version": "0.3.0",
       "runtimeHint": "uvx",
       "packageArguments": [
-        { "type": "positional", "value": "serve" }
+        {
+          "type": "positional",
+          "value": "serve"
+        }
       ],
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
-        { "name": "HNX_WORKSPACE", "description": "Workspace directory for the database, artefacts and exports (default ~/.helionyx)", "isRequired": false },
-        { "name": "HNX_OFFLINE", "description": "Set to 1 to use only cached and bundled data (no network calls)", "isRequired": false },
-        { "name": "HNX_REOPT_API_KEY", "description": "Optional NREL REopt API key for the reopt cross-check solver", "isRequired": false, "isSecret": true }
+        {
+          "name": "HNX_WORKSPACE",
+          "description": "Workspace directory for the database, artefacts and exports (default ~/.helionyx)",
+          "isRequired": false
+        },
+        {
+          "name": "HNX_OFFLINE",
+          "description": "Set to 1 to use only cached and bundled data (no network calls)",
+          "isRequired": false
+        },
+        {
+          "name": "HNX_REOPT_API_KEY",
+          "description": "Optional NREL REopt API key for the reopt cross-check solver",
+          "isRequired": false,
+          "isSecret": true
+        }
       ]
     }
   ]

@@ -53,6 +53,8 @@ Documentation = "https://github.com/Jayzilva/helionyx/tree/main/docs"
 Changelog = "https://github.com/Jayzilva/helionyx/blob/main/CHANGELOG.md"
 Issues = "https://github.com/Jayzilva/helionyx/issues"
 Disclaimer = "https://github.com/Jayzilva/helionyx/blob/main/DISCLAIMER.md"
+Releases = "https://github.com/Jayzilva/helionyx/releases"
+Smithery = "https://smithery.ai/servers/gitdevjay/helionyx"
 
 [project.scripts]
 helionyx = "helionyx.api.cli:app"

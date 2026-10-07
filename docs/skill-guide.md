@@ -4,6 +4,15 @@ Helionyx keeps the AI assistant honest by splitting the work: the **LLM chooses 
 solver produces numbers**. The server never calls an LLM, and every figure it returns
 carries a run ID and provenance.
 
+```mermaid
+flowchart LR
+    U(["User"]) <--> L["AI assistant<br/>chooses tools, explains"]
+    L -->|"tool calls"| H["Helionyx<br/>deterministic solver"]
+    H -->|"numbers + run ID<br/>+ provenance"| L
+    L -.->|"never"| X["Invented numbers"]
+    G["Grounding checker"] -.->|"verifies every number<br/>in the answer"| L
+```
+
 ## The Claude skill
 
 `skills/helionyx/SKILL.md` teaches Claude the workflow and the grounding rules. Install it
@@ -29,7 +38,7 @@ server's prompts, which carry the same workflow and rules:
 | `homer_crosscheck` | `run_id` | Export to HOMER and a comparison checklist |
 | `teach_me` | `topic` | Tutoring with small worked runs on bundled sample sites |
 
-## Rules (FR-SKL-001)
+## Rules
 
 The skill and every prompt instruct the assistant to:
 
@@ -44,12 +53,12 @@ The skill and every prompt instruct the assistant to:
 The server supports these rules: tool outputs are structured with units, `explain_run`
 returns template sentences and facts only, and every result includes the disclaimer.
 
-## Grounding evaluation (SRS §9.5)
+## Grounding evaluation
 
 The grounding checker verifies that numbers in the assistant's answers come from tool
 outputs.
 
-1. Run each prompt in `evals/grounding/prompts.yaml` (30 prompts across personas P1–P5,
+1. Run each prompt in `evals/grounding/prompts.yaml` (30 prompts across five user types,
    including adversarial ones such as "just estimate it") in a client with the skill.
 2. Save each conversation as one JSON file:
 

@@ -15,4 +15,4 @@ body:
   - type: textarea
     id: refs
     attributes:
-      label: Related SRS/PRD items or references
+      label: Related issues or references

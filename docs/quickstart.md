@@ -2,19 +2,27 @@
 
 Goal: a first ranked result in under ten minutes.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Jayzilva/helionyx/main/docs/assets/getting-started.svg" alt="Install in Claude Code, Claude Desktop or any MCP client; ask for a design; get ranked designs with a run ID." width="100%">
+</p>
+
 > The `lk` pack's tariffs, costs and emission factors are **unverified placeholders**.
 > Use the results to learn the tool, not to make decisions.
 
 ## 1. Install (2 minutes)
 
+You need [uv](https://docs.astral.sh/uv/) (it fetches Python 3.11–3.13 for you) or Python
+3.11–3.13 with pip.
+
 ```bash
-git clone <repository-url> helionyx
-cd helionyx
-uv venv
-uv pip install -e ".[dev]"
+uvx helionyx version        # runs Helionyx without installing it
+# or
+pip install helionyx
 ```
 
-Without uv: `python -m venv .venv` and `pip install -e ".[dev]"` inside it. Python 3.11–3.13.
+The examples below use the reference cases from the repository; download them with
+`git clone https://github.com/Jayzilva/helionyx.git` (or install from source as described in
+the README).
 
 ## 2. Run a reference case offline (2 minutes)
 
@@ -52,17 +60,31 @@ All data is stored in the workspace (`~/.helionyx` by default; set `HNX_WORKSPAC
 Claude Code:
 
 ```bash
-claude mcp add helionyx -- helionyx serve
-cp -r skills/helionyx ~/.claude/skills/
+claude mcp add helionyx -- uvx helionyx serve
+cp -r skills/helionyx ~/.claude/skills/      # optional: the workflow skill, from the repository
 ```
 
-Claude Desktop — add to `claude_desktop_config.json` and restart:
+Claude Desktop: download the `.mcpb` bundle from the
+[latest release](https://github.com/Jayzilva/helionyx/releases/latest) and open it. Or add to
+`claude_desktop_config.json` and restart:
 
 ```json
-{ "mcpServers": { "helionyx": { "command": "helionyx", "args": ["serve"] } } }
+{ "mcpServers": { "helionyx": { "command": "uvx", "args": ["helionyx", "serve"] } } }
 ```
 
-## 4. The happy path (PRD §8)
+Smithery: [smithery.ai/servers/gitdevjay/helionyx](https://smithery.ai/servers/gitdevjay/helionyx).
+
+## 4. A first conversation
+
+```mermaid
+flowchart LR
+    Q["Your question"] --> S["Scope<br/>≤ 3 questions"]
+    S --> D["Data<br/>site · weather · load · tariff"]
+    D --> V["Scenario<br/>validate and show assumptions"]
+    V --> R["Run<br/>simulate every candidate"]
+    R --> E["Explain<br/>top designs · bills · drivers"]
+    E --> N["Next<br/>sensitivity · report · Pareto"]
+```
 
 Ask:
 

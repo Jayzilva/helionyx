@@ -1,6 +1,6 @@
 # Helionyx methodology (v0.1)
 
-This is the normative calculation method of Helionyx v0.1 (SRS §7). Every number
+This is the normative calculation method of Helionyx. Every number
 Helionyx reports comes from these equations, applied deterministically.
 
 ## 1. Time base and energy balance
