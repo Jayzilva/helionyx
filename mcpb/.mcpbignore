@@ -1,0 +1,4 @@
+build/
+*.mcpb
+.venv/
+uv.lock

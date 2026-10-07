@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
+  <title id="t">Helionyx icon</title>
+  <rect width="512" height="512" rx="112" fill="#0B1220"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#38BDF8" stroke-opacity="0.55" stroke-width="10" stroke-dasharray="6 22" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="118" fill="none" stroke="#F59E0B" stroke-opacity="0.6" stroke-width="10" stroke-dasharray="14 18" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="72" fill="#F59E0B"/>
+  <circle cx="426" cy="256" r="22" fill="#38BDF8"/>
+  <circle cx="172" cy="354" r="18" fill="#14B8A6"/>
+</svg>

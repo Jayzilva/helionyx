@@ -1,0 +1,172 @@
+{
+  "manifest_version": "0.4",
+  "name": "helionyx",
+  "display_name": "Helionyx",
+  "version": "0.3.0",
+  "description": "Size hybrid solar PV, wind, battery, diesel and grid systems: hourly simulation, NPC ranking.",
+  "long_description": "Open-source MCP server for pre-feasibility sizing of hybrid renewable energy systems. It simulates every candidate design hour by hour for a year, drops designs that break constraints and ranks the rest by net present cost, so the assistant only explains numbers that come from a reproducible solver run. Includes a Sri Lankan tariff pack (CEB/LECO) with unverified placeholder data, sensitivity and Pareto analysis, multi-year expansion, HOMER CSV export and Markdown/Excel reports. Results are pre-feasibility estimates, not engineering design; see the disclaimer.",
+  "author": {
+    "name": "Jayath De Silva",
+    "url": "https://github.com/Jayzilva"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jayzilva/helionyx"
+  },
+  "homepage": "https://github.com/Jayzilva/helionyx",
+  "documentation": "https://github.com/Jayzilva/helionyx#readme",
+  "support": "https://github.com/Jayzilva/helionyx/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/server.py"
+      ],
+      "env": {
+        "HNX_WORKSPACE": "${user_config.workspace}",
+        "HNX_OFFLINE": "${user_config.offline}",
+        "HNX_REOPT_API_KEY": "${user_config.reopt_api_key}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "create_site",
+      "description": "Register a site (location, time zone and country pack). Returns site_id."
+    },
+    {
+      "name": "fetch_resource",
+      "description": "Get one year of hourly GHI, temperature and wind for a site, aligned to local civil time. Returns summary statistics only; the hourly series is available as a resource."
+    },
+    {
+      "name": "import_timeseries",
+      "description": "Import a measured load or resource series from CSV (one year, 15/30/60-minute resolution), or extend at least four weeks of measured load to a full year."
+    },
+    {
+      "name": "synthesize_load",
+      "description": "Build an 8,760-hour load from pack archetypes, optionally calibrated to monthly bills."
+    },
+    {
+      "name": "list_tariffs",
+      "description": "Browse the tariff pack (utility, category, effective dates, export schemes)."
+    },
+    {
+      "name": "get_tariff",
+      "description": "Show a tariff's charge structure, TOU periods, export schemes, provenance and staleness warnings."
+    },
+    {
+      "name": "compute_bill",
+      "description": "Monthly and annual bill for a load with no system (baseline), or for import/export series."
+    },
+    {
+      "name": "list_components",
+      "description": "Browse the component library: technical parameters, costs, currency, cost year and source."
+    },
+    {
+      "name": "create_scenario",
+      "description": "Combine site, loads, resource, grid/tariff, components and search space into a scenario. Unset fields take pack defaults; call validate_scenario next to see them."
+    },
+    {
+      "name": "validate_scenario",
+      "description": "Check a scenario: errors block a run, warnings do not; assumptions list every value with its origin (user, pack_default or system_default), source and date."
+    },
+    {
+      "name": "run_optimization",
+      "description": "Start an asynchronous run that simulates every candidate for 8,760 hours and ranks feasible ones. Returns job_id and run_id; poll get_job_status, then call get_results."
+    },
+    {
+      "name": "get_job_status",
+      "description": "Poll a job: state (queued, running, completed, failed, cancelled, interrupted), progress %, ETA, run_id."
+    },
+    {
+      "name": "cancel_job",
+      "description": "Cancel a queued or running job."
+    },
+    {
+      "name": "get_results",
+      "description": "Ranked feasible designs with sizes and key metrics, the base case, provenance and disclaimer. The full table is the resource hnx://runs/{run_id}/results.csv."
+    },
+    {
+      "name": "get_pareto_front",
+      "description": "Designs on the Pareto front of NPC, annual CO2 and capacity shortage, including designs that break a constraint (flagged), to show cost versus emissions versus reliability trade-offs."
+    },
+    {
+      "name": "explain_run",
+      "description": "Structured facts about one design: NPC breakdown and shares, top cost drivers, binding constraints, dispatch statistics, differences from the next design or base case, and the most uncertain inputs."
+    },
+    {
+      "name": "get_monthly_summary",
+      "description": "Twelve months of energy flows and, for grid-connected runs, the bill before and after."
+    },
+    {
+      "name": "run_sensitivity",
+      "description": "Re-optimise the scenario for each value (or each pair of values in a two-variable grid) and compute NPC elasticities. Returns job_id and batch_id; then call get_sensitivity_results."
+    },
+    {
+      "name": "get_sensitivity_results",
+      "description": "Optimal design for each sweep value and the NPC elasticity at the base point."
+    },
+    {
+      "name": "compare_runs",
+      "description": "Side-by-side sizes and key metrics of several runs (e.g. native vs REopt), with differences."
+    },
+    {
+      "name": "export_homer_csv",
+      "description": "Write HOMER-importable load and resource series (8,760 rows) plus a parameter sheet."
+    },
+    {
+      "name": "export_report",
+      "description": "Write a client report as Markdown or Excel: scenario, assumptions, top designs, cost breakdown, monthly table, sensitivities, provenance and disclaimer."
+    }
+  ],
+  "keywords": [
+    "energy",
+    "solar",
+    "microgrid",
+    "battery",
+    "renewable-energy",
+    "techno-economic",
+    "homer",
+    "sri-lanka"
+  ],
+  "license": "Apache-2.0",
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "runtimes": {
+      "python": ">=3.11,<3.14"
+    }
+  },
+  "user_config": {
+    "workspace": {
+      "type": "directory",
+      "title": "Workspace folder",
+      "description": "Where Helionyx keeps its database, results and exports.",
+      "default": "${HOME}/.helionyx",
+      "required": false
+    },
+    "offline": {
+      "type": "boolean",
+      "title": "Offline mode",
+      "description": "Use only cached and bundled data; no calls to NASA POWER or PVGIS.",
+      "default": false,
+      "required": false
+    },
+    "reopt_api_key": {
+      "type": "string",
+      "title": "REopt API key (optional)",
+      "description": "Only for the reopt cross-check solver; sends load data to NREL.",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}

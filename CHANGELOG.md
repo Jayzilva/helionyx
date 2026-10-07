@@ -8,6 +8,15 @@ All notable changes to this project are documented here. The format follows
 
 Development continues on branch `feat/v1.0`; scope in `docs/IMPLEMENTATION_PLAN.md` §7.
 
+### Added
+
+- MCPB bundle (`mcpb/`, uv runtime): installs `helionyx` from PyPI for one-click installs in
+  Claude Desktop and for Smithery, which now takes MCPB bundles or remote URLs.
+
+### Removed
+
+- `smithery.yaml`: Smithery no longer builds servers from a repository configuration.
+
 ## [0.3.0] — 2026-10-07 — Multi-year and packaging
 
 ### Added

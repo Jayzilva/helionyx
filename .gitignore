@@ -32,3 +32,8 @@ Thumbs.db
 
 # Local-only planning documents
 private/
+
+# MCPB bundle build outputs
+mcpb/*.mcpb
+mcpb/.venv/
+mcpb/uv.lock

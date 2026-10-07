@@ -1,0 +1,6 @@
+[project]
+name = "helionyx-mcpb"
+version = "0.3.0"
+description = "MCPB launcher for the Helionyx MCP server (installs helionyx from PyPI)"
+requires-python = ">=3.11,<3.14"
+dependencies = ["helionyx==0.3.0"]
